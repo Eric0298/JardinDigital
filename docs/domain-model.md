@@ -60,4 +60,4 @@ models or databases.
 - Deletion and cascade rules
 - Duplicate-edge policy
 - React Flow and the visual Canvas implementation
-- Global state and testing framework
+- Global state management

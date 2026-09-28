@@ -92,7 +92,7 @@ An abstraction is introduced only when the answers justify its immediate cost.
 - React Flow and the visual Canvas implementation
 - Global state management
 - Router
-- Additional testing
+- Testing beyond the current domain unit tests
 - Markdown
 - PDF
 - Search

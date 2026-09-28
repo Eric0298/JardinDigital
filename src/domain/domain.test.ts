@@ -1,0 +1,211 @@
+import { describe, expect, it } from "vitest";
+import { createCanvas, type CanvasId } from "./canvas";
+import { createEdge } from "./edge";
+import { createNode, type NodeId } from "./node";
+import { createPlacement } from "./placement";
+import { createResource } from "./resource";
+
+const UUID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+describe("Node", () => {
+  it("creates a node with title and content", () => {
+    const node = createNode("Título", "Contenido");
+
+    expect(node.title).toBe("Título");
+    expect(node.content).toBe("Contenido");
+  });
+
+  it("creates a node with only a title", () => {
+    const node = createNode("Título", "");
+
+    expect(node.title).toBe("Título");
+    expect(node.content).toBe("");
+  });
+
+  it("creates a node with only content", () => {
+    const node = createNode("", "Contenido");
+
+    expect(node.title).toBe("");
+    expect(node.content).toBe("Contenido");
+  });
+
+  it("rejects an empty title and empty content", () => {
+    expect(() => createNode("", "")).toThrow(
+      "Node title and content must not both be empty.",
+    );
+  });
+
+  it("rejects a whitespace-only title and content", () => {
+    expect(() => createNode("   ", "   ")).toThrow(
+      "Node title and content must not both be empty.",
+    );
+  });
+
+  it("normalizes title and content", () => {
+    const node = createNode("  Título  ", "  Contenido  ");
+
+    expect(node.title).toBe("Título");
+    expect(node.content).toBe("Contenido");
+  });
+
+  it("generates a distinct UUID for each node", () => {
+    const first = createNode("Primero");
+    const second = createNode("Segundo");
+
+    expect(first.id).toMatch(UUID_PATTERN);
+    expect(second.id).toMatch(UUID_PATTERN);
+    expect(first.id).not.toBe(second.id);
+  });
+});
+
+describe("Edge", () => {
+  it("creates an edge with its source and target nodes", () => {
+    const source = createNode("Origen");
+    const target = createNode("Destino");
+    const edge = createEdge(source.id, target.id);
+
+    expect(edge.sourceNodeId).toBe(source.id);
+    expect(edge.targetNodeId).toBe(target.id);
+  });
+
+  it("generates its own identity", () => {
+    const source = createNode("Origen");
+    const target = createNode("Destino");
+    const edge = createEdge(source.id, target.id);
+
+    expect(edge.id).toMatch(UUID_PATTERN);
+    expect(edge.id).not.toBe(source.id);
+    expect(edge.id).not.toBe(target.id);
+  });
+
+  it("rejects an empty source node identity", () => {
+    const target = createNode("Destino");
+
+    expect(() => createEdge("" as NodeId, target.id)).toThrow(
+      "Edge sourceNodeId must not be empty.",
+    );
+  });
+
+  it("rejects an empty target node identity", () => {
+    const source = createNode("Origen");
+
+    expect(() => createEdge(source.id, "" as NodeId)).toThrow(
+      "Edge targetNodeId must not be empty.",
+    );
+  });
+
+  it("allows a node to connect to itself", () => {
+    const node = createNode("Autorreferencia");
+    const edge = createEdge(node.id, node.id);
+
+    expect(edge.sourceNodeId).toBe(node.id);
+    expect(edge.targetNodeId).toBe(node.id);
+  });
+});
+
+describe("Resource", () => {
+  it("normalizes its title and generates distinct identities", () => {
+    const first = createResource("  Referencia  ");
+    const second = createResource("Otra referencia");
+
+    expect(first.title).toBe("Referencia");
+    expect(first.id).toMatch(UUID_PATTERN);
+    expect(second.id).toMatch(UUID_PATTERN);
+    expect(first.id).not.toBe(second.id);
+  });
+
+  it("rejects an empty or whitespace-only title", () => {
+    expect(() => createResource("")).toThrow(
+      "Resource title must not be empty.",
+    );
+    expect(() => createResource("   ")).toThrow(
+      "Resource title must not be empty.",
+    );
+  });
+});
+
+describe("Canvas", () => {
+  it("normalizes its title and generates distinct identities", () => {
+    const first = createCanvas("  Investigación  ");
+    const second = createCanvas("Escritura");
+
+    expect(first.title).toBe("Investigación");
+    expect(first.id).toMatch(UUID_PATTERN);
+    expect(second.id).toMatch(UUID_PATTERN);
+    expect(first.id).not.toBe(second.id);
+  });
+
+  it("rejects an empty or whitespace-only title", () => {
+    expect(() => createCanvas("")).toThrow(
+      "Canvas title must not be empty.",
+    );
+    expect(() => createCanvas("   ")).toThrow(
+      "Canvas title must not be empty.",
+    );
+  });
+});
+
+describe("Placement", () => {
+  it("creates a placement with its references and position", () => {
+    const node = createNode("Conocimiento");
+    const canvas = createCanvas("Principal");
+    const placement = createPlacement(canvas.id, node.id, { x: 100, y: 200 });
+
+    expect(placement.id).toMatch(UUID_PATTERN);
+    expect(placement.canvasId).toBe(canvas.id);
+    expect(placement.nodeId).toBe(node.id);
+    expect(placement.position).toEqual({ x: 100, y: 200 });
+  });
+
+  it.each([
+    ["NaN", Number.NaN],
+    ["Infinity", Number.POSITIVE_INFINITY],
+    ["-Infinity", Number.NEGATIVE_INFINITY],
+  ])("rejects %s coordinates", (_label, coordinate) => {
+    const node = createNode("Conocimiento");
+    const canvas = createCanvas("Principal");
+
+    expect(() =>
+      createPlacement(canvas.id, node.id, { x: coordinate, y: 0 }),
+    ).toThrow("Placement coordinates must be finite numbers.");
+    expect(() =>
+      createPlacement(canvas.id, node.id, { x: 0, y: coordinate }),
+    ).toThrow("Placement coordinates must be finite numbers.");
+  });
+
+  it("rejects an empty canvas identity", () => {
+    const node = createNode("Conocimiento");
+
+    expect(() =>
+      createPlacement("" as CanvasId, node.id, { x: 0, y: 0 }),
+    ).toThrow("Placement canvasId must not be empty.");
+  });
+
+  it("rejects an empty node identity", () => {
+    const canvas = createCanvas("Principal");
+
+    expect(() =>
+      createPlacement(canvas.id, "" as NodeId, { x: 0, y: 0 }),
+    ).toThrow("Placement nodeId must not be empty.");
+  });
+
+  it("places the same node in different canvases and positions", () => {
+    const node = createNode("Conocimiento compartido");
+    const firstCanvas = createCanvas("Investigación");
+    const secondCanvas = createCanvas("Escritura");
+    const firstPlacement = createPlacement(firstCanvas.id, node.id, {
+      x: 100,
+      y: 200,
+    });
+    const secondPlacement = createPlacement(secondCanvas.id, node.id, {
+      x: 500,
+      y: 100,
+    });
+
+    expect(firstPlacement.nodeId).toBe(node.id);
+    expect(secondPlacement.nodeId).toBe(node.id);
+    expect(firstPlacement.canvasId).not.toBe(secondPlacement.canvasId);
+    expect(firstPlacement.position).not.toEqual(secondPlacement.position);
+  });
+});
