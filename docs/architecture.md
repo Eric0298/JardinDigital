@@ -25,10 +25,11 @@ code that solves a current problem.
 - **UI** is the React presentation layer: views, components, styles, and user
   interaction. It must not define JardinDigital's persistent model.
 
-The current application is too small to justify physical Domain, Application,
-or Infrastructure directories. The existing `src/App.tsx` is the UI root and
-`src/main.tsx` remains the frontend entry point. The `@` alias is intentionally
-deferred because there are no deep imports to simplify.
+The real domain model now justifies `src/domain`. Application and Infrastructure
+remain conceptual until they contain code that solves a current problem. The
+existing `src/App.tsx` is the UI root and `src/main.tsx` remains the frontend
+entry point. The `@` alias is intentionally deferred because there are no deep
+imports to simplify.
 
 ## Dependency rules
 
@@ -83,15 +84,12 @@ An abstraction is introduced only when the answers justify its immediate cost.
 
 ## Decisions intentionally deferred
 
-- Node implementation
-- Edge implementation
-- Resource implementation
 - SQLite and the SQLite library
 - ORM and migrations
 - Persistence strategy
 - Managed Resource and Linked Resource
 - Vault
-- React Flow and Canvas
+- React Flow and the visual Canvas implementation
 - Global state management
 - Router
 - Additional testing
