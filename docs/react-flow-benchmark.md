@@ -152,7 +152,7 @@ introduced.
 - Edge emitted internal task-manager, sync, and updater diagnostics in some
   headless runs. They did not originate from application JavaScript.
 - `cargo check` continues to emit the known path-canonicalization warning for
-  `C:\Users\Usuario`.
+  the Windows user profile path.
 
 ## 13. Architectural impact
 
