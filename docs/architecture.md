@@ -49,9 +49,25 @@ UI -> Application -> Domain
 
 ## Canvas independence
 
-React Flow is a candidate, not a decision. If adopted, a future Canvas adapter
-will translate between Canvas data and the Domain. React Flow's object model
-must never become JardinDigital's primary persistent model.
+`@xyflow/react` is the initial implementation selected for JardinDigital's
+two-dimensional Canvas. It belongs exclusively to Presentation/UI and does not
+define the Domain or the persistent model.
+
+JardinDigital's Node, Edge, Canvas, and Placement remain its own models. A
+JardinDigital Node is not a React Flow Node, a JardinDigital Edge is not a
+React Flow Edge, a JardinDigital Canvas is not a React Flow instance, and a
+Placement is not React Flow visual state. Persistent position belongs
+conceptually to Placement.
+
+The conceptual translation direction is:
+
+```text
+Domain -> Canvas adapter -> React Flow
+```
+
+The adapter lives outside Domain. React Flow objects must never be persisted
+directly. These boundaries keep React Flow replaceable without requiring a
+Domain or stored-data migration.
 
 ## Persistent state vs UI state
 
@@ -89,7 +105,7 @@ An abstraction is introduced only when the answers justify its immediate cost.
 - Persistence strategy
 - Managed Resource and Linked Resource
 - Vault
-- React Flow and the visual Canvas implementation
+- Production Canvas composition and interactions
 - Global state management
 - Router
 - Testing beyond the current domain unit tests

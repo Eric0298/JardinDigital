@@ -30,8 +30,9 @@ that Node's finite two-dimensional position in that Canvas.
 
 Because position belongs to Placement, the same Node can appear in multiple
 Canvases at different positions. Neither Canvas nor Placement depends on React
-Flow. If React Flow is adopted, an adapter will translate its visual model to
-and from this domain model.
+Flow. React Flow is adopted only as the initial Presentation/UI implementation;
+an adapter outside Domain will translate between its visual model and this
+domain model.
 
 ## Shared knowledge
 
@@ -59,5 +60,5 @@ models or databases.
 - Managed Resource and Linked Resource
 - Deletion and cascade rules
 - Duplicate-edge policy
-- React Flow and the visual Canvas implementation
+- Production visual Canvas behavior
 - Global state management
