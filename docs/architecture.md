@@ -80,6 +80,20 @@ context menu or modal, current selection, active tools, and transient visual
 states. UI state must not be persisted merely because the interface uses it.
 No global state library is justified at this stage.
 
+## Persistence direction
+
+Local persistence separates structured state from file content. A future
+SQLite database will store entities, relationships, positions, and justified
+structured metadata. Binary Resource content belongs on the filesystem and
+large files must not be stored as SQLite BLOBs. Linked Resources are the
+lightweight-first default; a Managed copy is an explicit user choice.
+
+Application-generated IDs must survive rehydration unchanged, and domain
+invariants remain valid at the load boundary. Internal App Data is sufficient
+for the initial product; a user-visible Vault is a distinct, deferred feature.
+The detailed decisions and deferred implementation choices are recorded in
+[`persistence-model.md`](./persistence-model.md).
+
 ## Native boundary
 
 Tauri capabilities must be narrow, explicit, and aligned with real
@@ -100,11 +114,11 @@ An abstraction is introduced only when the answers justify its immediate cost.
 
 ## Decisions intentionally deferred
 
-- SQLite and the SQLite library
-- ORM and migrations
-- Persistence strategy
-- Managed Resource and Linked Resource
-- Vault
+- SQLite library, physical schema, ORM, and migrations
+- Physical storage layout and path representation
+- User-visible Vault and portable Workspace behavior
+- Resource associations, types, and storage metadata
+- Backup, import/export, previews, and cache implementation
 - Production Canvas composition and interactions
 - Global state management
 - Router
