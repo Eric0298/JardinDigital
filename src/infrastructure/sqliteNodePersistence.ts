@@ -1,12 +1,10 @@
-import Database from "@tauri-apps/plugin-sql";
 import {
   InvalidPersistedNodeError,
   NodePersistenceError,
   type NodePersistence,
 } from "../application/nodePersistence";
 import { rehydrateNode, type Node, type NodeId } from "../domain/node";
-
-const DATABASE_URL = "sqlite:jardindigital.db";
+import { jardindigitalDatabase } from "./sqliteDatabase";
 
 interface NodeRow {
   id: unknown;
@@ -15,17 +13,10 @@ interface NodeRow {
 }
 
 export function createSqliteNodePersistence(): NodePersistence {
-  let databasePromise: Promise<Database> | undefined;
-
-  function database() {
-    databasePromise ??= Database.load(DATABASE_URL);
-    return databasePromise;
-  }
-
   return {
     async save(node: Node) {
       try {
-        const db = await database();
+        const db = await jardindigitalDatabase();
         await db.execute(
           `INSERT INTO nodes (id, title, content)
            VALUES ($1, $2, $3)
@@ -43,7 +34,7 @@ export function createSqliteNodePersistence(): NodePersistence {
       let rows: NodeRow[];
 
       try {
-        const db = await database();
+        const db = await jardindigitalDatabase();
         rows = await db.select<NodeRow[]>(
           `SELECT id, title, content
            FROM nodes

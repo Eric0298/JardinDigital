@@ -1,188 +1,242 @@
 import { useState, type FormEvent } from "react";
 import {
-  createPersistedNode,
-  InvalidPersistedNodeError,
-  loadPersistedNode,
-  NodePersistenceError,
-  persistNodeEdit,
-  type NodePersistence,
-} from "./application/nodePersistence";
-import type { Node, NodeId } from "./domain/node";
+  Background,
+  ReactFlow,
+  applyNodeChanges,
+  type NodeChange,
+  type OnNodeDrag,
+} from "@xyflow/react";
+import "@xyflow/react/dist/style.css";
+import {
+  createDemoCanvas,
+  loadCanvasView,
+  type CanvasView,
+  type CanvasViewDependencies,
+} from "./application/canvasView";
+import { moveNodeInCanvas } from "./application/placementPersistence";
+import type { CanvasId } from "./domain/canvas";
+import type { PlacementId } from "./domain/placement";
+import {
+  toReactFlowNodes,
+  type CanvasFlowNode,
+} from "./presentation/canvas/reactFlowAdapter";
 import "./App.css";
 
-interface AppProps {
-  nodePersistence: NodePersistence;
-}
+interface AppProps extends CanvasViewDependencies {}
 
 function errorMessage(error: unknown) {
-  if (error instanceof InvalidPersistedNodeError) {
-    return "Invalid persisted data: the stored row is not a valid Node.";
-  }
-
-  if (error instanceof NodePersistenceError) {
-    return `Persistence error: ${error.message}`;
-  }
-
-  if (error instanceof Error) {
-    return error.message;
-  }
-
-  return "Unexpected error.";
+  return error instanceof Error ? error.message : "Unexpected error.";
 }
 
-function App({ nodePersistence }: AppProps) {
-  const [title, setTitle] = useState("");
-  const [content, setContent] = useState("");
-  const [loadId, setLoadId] = useState("");
-  const [currentNode, setCurrentNode] = useState<Node | null>(null);
+function App({
+  canvasPersistence,
+  nodePersistence,
+  placementPersistence,
+}: AppProps) {
+  const dependencies = {
+    canvasPersistence,
+    nodePersistence,
+    placementPersistence,
+  };
+  const [canvasId, setCanvasId] = useState("");
+  const [view, setView] = useState<CanvasView | null>(null);
+  const [flowNodes, setFlowNodes] = useState<CanvasFlowNode[]>([]);
   const [status, setStatus] = useState("Ready.");
   const [busy, setBusy] = useState(false);
+  const [saving, setSaving] = useState(false);
+
+  function showView(nextView: CanvasView) {
+    setView(nextView);
+    setFlowNodes(toReactFlowNodes(nextView.nodes, nextView.placements));
+    setCanvasId(nextView.canvas.id);
+  }
 
   async function run(action: () => Promise<void>) {
     setBusy(true);
     try {
       await action();
     } catch (error) {
-      setStatus(errorMessage(error));
+      setStatus(`Error: ${errorMessage(error)}`);
     } finally {
       setBusy(false);
     }
   }
 
-  function create(event: FormEvent) {
-    event.preventDefault();
+  function createDemo() {
     void run(async () => {
-      const node = await createPersistedNode(nodePersistence, title, content);
-      setCurrentNode(node);
-      setLoadId(node.id);
-      setTitle(node.title);
-      setContent(node.content);
-      setStatus("Node created and persisted.");
+      const nextView = await createDemoCanvas(dependencies);
+      showView(nextView);
+      setStatus("Saved. Demo Canvas, Nodes, and Placements created.");
     });
   }
 
-  function load(id: string) {
+  function load(event: FormEvent) {
+    event.preventDefault();
     void run(async () => {
-      const normalizedId = id.trim();
+      const normalizedId = canvasId.trim();
+
       if (normalizedId.length === 0) {
-        throw new Error("Enter a Node ID to load.");
+        throw new Error("Enter a Canvas ID to load.");
       }
 
-      const node = await loadPersistedNode(
-        nodePersistence,
-        normalizedId as NodeId,
+      const loaded = await loadCanvasView(
+        dependencies,
+        normalizedId as CanvasId,
       );
 
-      if (node === null) {
-        setCurrentNode(null);
-        setStatus("Node not found.");
+      if (loaded === null) {
+        setView(null);
+        setFlowNodes([]);
+        setStatus("Error: Canvas not found.");
         return;
       }
 
-      setCurrentNode(node);
-      setLoadId(node.id);
-      setTitle(node.title);
-      setContent(node.content);
-      setStatus("Node loaded from SQLite.");
+      showView(loaded);
+      setStatus("Loaded from SQLite.");
     });
   }
 
-  function saveEdit() {
-    if (currentNode === null) {
-      setStatus("Load or create a Node before saving an edit.");
+  function handleNodesChange(changes: NodeChange<CanvasFlowNode>[]) {
+    setFlowNodes((current) => applyNodeChanges(changes, current));
+  }
+
+  const handleNodeDragStop: OnNodeDrag<CanvasFlowNode> = (
+    _event,
+    visualNode,
+  ) => {
+    if (view === null || saving) {
       return;
     }
 
-    void run(async () => {
-      const node = await persistNodeEdit(
-        nodePersistence,
-        currentNode,
-        title,
-        content,
-      );
-      setCurrentNode(node);
-      setStatus("Node edit persisted.");
-    });
-  }
+    setSaving(true);
+    setStatus("Saving...");
+
+    void moveNodeInCanvas(
+      placementPersistence,
+      visualNode.id as PlacementId,
+      visualNode.position,
+    )
+      .then((moved) => {
+        const nextView: CanvasView = {
+          ...view,
+          placements: view.placements.map((placement) =>
+            placement.id === moved.id ? moved : placement,
+          ),
+        };
+        showView(nextView);
+        setStatus("Saved.");
+      })
+      .catch((error: unknown) => {
+        setFlowNodes(toReactFlowNodes(view.nodes, view.placements));
+        setStatus(`Error: ${errorMessage(error)}`);
+      })
+      .finally(() => setSaving(false));
+  };
 
   return (
     <main className="slice">
-      <header>
-        <p className="eyebrow">Technical validation</p>
-        <h1>Persistence Vertical Slice</h1>
-        <p>Create, save, reload, edit, and reload one JardinDigital Node.</p>
+      <header className="slice-header">
+        <div>
+          <p className="eyebrow">Technical validation</p>
+          <h1>Canvas + Placement Vertical Slice</h1>
+          <p>
+            Domain placements drive React Flow positions and persist when a drag
+            ends.
+          </p>
+        </div>
+        <p className="status" aria-live="polite">
+          {status}
+        </p>
       </header>
 
-      <section aria-labelledby="node-editor-heading">
-        <h2 id="node-editor-heading">Node values</h2>
-        <form onSubmit={create}>
-          <label>
-            Title
+      <section className="loader" aria-labelledby="canvas-loader-heading">
+        <h2 id="canvas-loader-heading">Open a persisted Canvas</h2>
+        <form onSubmit={load}>
+          <label htmlFor="canvas-id">Canvas ID</label>
+          <div className="load-row">
             <input
-              value={title}
-              onChange={(event) => setTitle(event.target.value)}
-              disabled={busy}
+              id="canvas-id"
+              value={canvasId}
+              onChange={(event) => setCanvasId(event.target.value)}
+              disabled={busy || saving}
+              placeholder="Paste the ID after restarting"
             />
-          </label>
-          <label>
-            Content
-            <textarea
-              value={content}
-              onChange={(event) => setContent(event.target.value)}
-              disabled={busy}
-              rows={5}
-            />
-          </label>
-          <div className="actions">
-            <button type="submit" disabled={busy}>
-              Create and persist new Node
-            </button>
-            <button
-              type="button"
-              onClick={saveEdit}
-              disabled={busy || currentNode === null}
-            >
-              Persist edit
+            <button type="submit" disabled={busy || saving}>
+              Load Canvas
             </button>
           </div>
         </form>
       </section>
 
-      <section aria-labelledby="node-loader-heading">
-        <h2 id="node-loader-heading">Load from SQLite</h2>
-        <label>
-          Node ID
-          <input
-            value={loadId}
-            onChange={(event) => setLoadId(event.target.value)}
-            disabled={busy}
-            placeholder="Paste the ID after restarting"
-          />
-        </label>
-        <div className="actions">
-          <button type="button" onClick={() => load(loadId)} disabled={busy}>
-            Load by ID
+      {view === null ? (
+        <section className="empty-state" aria-labelledby="empty-heading">
+          <p className="eyebrow">Empty state</p>
+          <h2 id="empty-heading">No Canvas is loaded</h2>
+          <p>Create three persisted Nodes and their initial Placements.</p>
+          <button type="button" onClick={createDemo} disabled={busy || saving}>
+            Create demo Canvas
           </button>
-          <button
-            type="button"
-            onClick={() => currentNode && load(currentNode.id)}
-            disabled={busy || currentNode === null}
-          >
-            Reload current Node
-          </button>
-        </div>
-      </section>
+        </section>
+      ) : (
+        <>
+          <section className="canvas-panel" aria-labelledby="canvas-heading">
+            <div className="canvas-heading">
+              <div>
+                <p className="eyebrow">Persisted Canvas</p>
+                <h2 id="canvas-heading">{view.canvas.title}</h2>
+              </div>
+              <code>{view.canvas.id}</code>
+            </div>
+            <div className="flow-canvas">
+              <ReactFlow<CanvasFlowNode>
+                nodes={flowNodes}
+                edges={[]}
+                onNodesChange={handleNodesChange}
+                onNodeDragStop={handleNodeDragStop}
+                nodesDraggable={!busy && !saving}
+                nodesConnectable={false}
+                elementsSelectable
+                fitView
+              >
+                <Background />
+              </ReactFlow>
+            </div>
+          </section>
 
-      <section className="result" aria-live="polite">
-        <h2>Observed result</h2>
-        <p>
-          <strong>Status:</strong> {status}
-        </p>
-        <p>
-          <strong>Current ID:</strong>{" "}
-          <output>{currentNode?.id ?? "None"}</output>
-        </p>
-      </section>
+          <section aria-labelledby="identity-heading">
+            <h2 id="identity-heading">Persisted identity and position</h2>
+            <div className="identity-list">
+              {view.placements.map((placement) => {
+                const node = view.nodes.find(
+                  (candidate) => candidate.id === placement.nodeId,
+                );
+
+                return (
+                  <article key={placement.id} className="identity-card">
+                    <strong>{node?.title ?? "Unknown Node"}</strong>
+                    <dl>
+                      <div>
+                        <dt>Node</dt>
+                        <dd>{placement.nodeId}</dd>
+                      </div>
+                      <div>
+                        <dt>Placement</dt>
+                        <dd>{placement.id}</dd>
+                      </div>
+                      <div>
+                        <dt>Position</dt>
+                        <dd>
+                          x: {placement.position.x}, y: {placement.position.y}
+                        </dd>
+                      </div>
+                    </dl>
+                  </article>
+                );
+              })}
+            </div>
+          </section>
+        </>
+      )}
     </main>
   );
 }

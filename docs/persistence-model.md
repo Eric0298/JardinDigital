@@ -67,16 +67,15 @@ Rehydrated entity: stored identity + stored values -> validate -> same entity ID
 ```
 
 The current `createNode`, `createEdge`, `createResource`, `createCanvas`, and
-`createPlacement` functions correctly generate identities for new entities.
-They must not be reused as-is for loading, because doing so would break all
-stored identities and references.
+`createPlacement` functions generate identities for new entities. The
+implemented Node, Canvas, and Placement load paths instead use entity-specific
+rehydration functions so stored identities and references survive unchanged.
 
-When the first persistence slice is implemented, the minimum addition should
-be an explicit, entity-specific rehydration path for the entity in that slice.
-It should accept the existing ID and current values, normalize or validate them
-with the same invariant rules as creation, and return that ID unchanged. It
-must not be a generic factory, and the other four paths should be added only as
-their use cases arrive.
+Each rehydration function accepts existing IDs and current values, normalizes
+or validates them with the entity's invariant rules, and returns those IDs
+unchanged. `movePlacement` likewise preserves Placement, Canvas, and Node
+identity while replacing only the validated finite position. These are not
+generic factories; Edge and Resource rehydration remain deferred.
 
 Domain invariants still apply during rehydration. Stored data can be old,
 corrupt, manually altered, or produced by faulty code; turning invalid rows
@@ -101,8 +100,10 @@ belong to the loading/use-case boundary once those rules are defined.
 
 SQLite is responsible for structured, queryable state and transactional
 consistency. The filesystem is responsible for byte-oriented content. Large
-files as SQLite BLOBs: **no**. The first implemented table contains only the
-Node fields `id`, `title`, and `content`; later schemas remain undefined here.
+files as SQLite BLOBs: **no**. Migration v1 contains the Node fields `id`,
+`title`, and `content`. Migration v2 adds Canvas `id/title` and Placement
+`id/canvas_id/node_id/x/y`, with foreign keys to Canvas and Node plus
+`UNIQUE(canvas_id, node_id)`.
 
 ## 7. Resource
 
@@ -234,11 +235,12 @@ worker, size limit, or scheduler is designed in this phase.
 ## 16. Tauri boundary
 
 The frontend may request narrow operations that express JardinDigital use
-cases. For the implemented Node slice, React calls Application functions
-through a Node-specific persistence port; a single Infrastructure adapter owns
-the official Tauri SQL binding, connection URL, parameterized SQL, and row
-rehydration. Filesystem operations and future resource behavior remain native
-boundary concerns.
+cases. React calls Application functions through Node-, Canvas-, and
+Placement-specific persistence ports. Infrastructure adapters own the official
+Tauri SQL binding, parameterized SQL, and row rehydration, while one small
+Infrastructure module owns the shared lazy `Database.load()` and connection
+URL. Filesystem operations and future resource behavior remain native boundary
+concerns.
 
 - Arbitrary SQL from UI: **no**.
 - Arbitrary filesystem access from UI: **no**.
@@ -249,10 +251,10 @@ case. No native operation is introduced by this design.
 
 ## 17. Rule for repositories
 
-Repositories in #07: **no**. The first real persistence use case now justifies
-one `NodePersistence` port with only `save` and `load`. It decouples the three
-Node application functions from the SQLite adapter without creating a generic
-repository or contracts for other entities.
+Generic repositories: **no**. Current use cases justify three narrow ports:
+Node and Canvas each expose only `save/load`; Placement exposes
+`save/load/loadForCanvas`. They decouple Application from SQLite without a base
+repository, factory, manager, or query framework.
 Before adding one, answer:
 
 1. What current problem does it solve?
@@ -282,15 +284,11 @@ and the observed result are recorded in
 [`sqlite-vertical-slice.md`](./sqlite-vertical-slice.md). Filesystem concerns
 and all other entities remain excluded.
 
-## 19. Incremental order after Node
+## 19. Incremental order after Canvas and Placement
 
-1. **Canvas**: establishes a second independent entity needed by visual
-   organization.
-2. **Placement**: depends on both Node and Canvas and validates references plus
-   durable two-dimensional position.
-3. **Edge**: depends on persisted Nodes and adds Node-to-Node relationships;
+1. **Edge**: depends on persisted Nodes and adds Node-to-Node relationships;
    doing it after Placement keeps the first canvas slice focused.
-4. **Resource**: comes last because storage mode, file operations, and its
+2. **Resource**: comes later because storage mode, file operations, and its
    relationship with Node still need validated use cases.
 
 Each step should be a complete vertical slice with its own load/save behavior
@@ -300,9 +298,10 @@ and tests. Dependency order, not table count, determines sequencing.
 
 The following remain open until a concrete use case supplies constraints:
 
-- SQL schemas, indexes, foreign keys, and migrations beyond Node;
-- connection and transaction behavior beyond the official plugin lifecycle and
-  the current single-statement Node operations;
+- SQL schemas, indexes, foreign keys, and migrations beyond Node, Canvas, and
+  Placement;
+- transactional orchestration for multi-entity operations; the current demo
+  Canvas creation is intentionally sequential and non-transactional;
 - timestamps, lifecycle semantics, soft delete, deletion, and cascades;
 - duplicate Edge policy and aggregate boundaries;
 - Node/Resource association and cardinality;

@@ -1,8 +1,12 @@
 import { describe, expect, it, vi } from "vitest";
-import { createCanvas, type CanvasId } from "./canvas";
+import { createCanvas, rehydrateCanvas, type CanvasId } from "./canvas";
 import { createEdge } from "./edge";
 import { createNode, editNode, rehydrateNode, type NodeId } from "./node";
-import { createPlacement } from "./placement";
+import {
+  createPlacement,
+  movePlacement,
+  rehydratePlacement,
+} from "./placement";
 import { createResource } from "./resource";
 
 const UUID_PATTERN =
@@ -217,6 +221,38 @@ describe("Canvas", () => {
       "Canvas title must not be empty.",
     );
   });
+
+  describe("rehydration", () => {
+    const storedId = "30a50c27-b1f4-48ae-a9b4-ece2c2da2d31";
+
+    it("preserves the stored identity and normalizes the title", () => {
+      const canvas = rehydrateCanvas(storedId, "  Principal  ");
+
+      expect(canvas).toEqual({ id: storedId, title: "Principal" });
+    });
+
+    it("rejects an invalid stored identity", () => {
+      expect(() => rehydrateCanvas("not-a-uuid", "Principal")).toThrow(
+        "Canvas id must be a valid application UUID.",
+      );
+    });
+
+    it("keeps the existing title invariant", () => {
+      expect(() => rehydrateCanvas(storedId, "   ")).toThrow(
+        "Canvas title must not be empty.",
+      );
+    });
+
+    it("does not generate a new identity", () => {
+      const randomUuid = vi.spyOn(globalThis.crypto, "randomUUID");
+
+      const canvas = rehydrateCanvas(storedId, "Principal");
+
+      expect(randomUuid).not.toHaveBeenCalled();
+      expect(canvas.id).toBe(storedId);
+      randomUuid.mockRestore();
+    });
+  });
 });
 
 describe("Placement", () => {
@@ -280,5 +316,117 @@ describe("Placement", () => {
     expect(secondPlacement.nodeId).toBe(node.id);
     expect(firstPlacement.canvasId).not.toBe(secondPlacement.canvasId);
     expect(firstPlacement.position).not.toEqual(secondPlacement.position);
+  });
+
+  it("allows negative coordinates", () => {
+    const node = createNode("Conocimiento");
+    const canvas = createCanvas("Principal");
+
+    const placement = createPlacement(canvas.id, node.id, {
+      x: -125.5,
+      y: -80.25,
+    });
+
+    expect(placement.position).toEqual({ x: -125.5, y: -80.25 });
+  });
+
+  describe("rehydration", () => {
+    const placementId = "e0be9022-d56c-402a-a4f3-632f57d9363f";
+    const canvasId = "30a50c27-b1f4-48ae-a9b4-ece2c2da2d31";
+    const nodeId = "d76f7bb8-9f8f-4f5c-b8a4-4d46202ce34a";
+
+    it("preserves all identities and the stored position", () => {
+      const placement = rehydratePlacement(
+        placementId,
+        canvasId,
+        nodeId,
+        { x: -10.5, y: 42.25 },
+      );
+
+      expect(placement).toEqual({
+        id: placementId,
+        canvasId,
+        nodeId,
+        position: { x: -10.5, y: 42.25 },
+      });
+    });
+
+    it.each([
+      ["placement", "invalid", canvasId, nodeId],
+      ["canvas", placementId, "invalid", nodeId],
+      ["node", placementId, canvasId, "invalid"],
+    ])("rejects an invalid %s identity", (_label, id, canvas, node) => {
+      expect(() =>
+        rehydratePlacement(id, canvas, node, { x: 0, y: 0 }),
+      ).toThrow("must be a valid application UUID.");
+    });
+
+    it.each([
+      ["NaN", Number.NaN],
+      ["Infinity", Number.POSITIVE_INFINITY],
+      ["-Infinity", Number.NEGATIVE_INFINITY],
+    ])("rejects %s coordinates", (_label, coordinate) => {
+      expect(() =>
+        rehydratePlacement(placementId, canvasId, nodeId, {
+          x: coordinate,
+          y: 0,
+        }),
+      ).toThrow("Placement coordinates must be finite numbers.");
+      expect(() =>
+        rehydratePlacement(placementId, canvasId, nodeId, {
+          x: 0,
+          y: coordinate,
+        }),
+      ).toThrow("Placement coordinates must be finite numbers.");
+    });
+
+    it("does not generate a new identity", () => {
+      const randomUuid = vi.spyOn(globalThis.crypto, "randomUUID");
+
+      const placement = rehydratePlacement(
+        placementId,
+        canvasId,
+        nodeId,
+        { x: 0, y: 0 },
+      );
+
+      expect(randomUuid).not.toHaveBeenCalled();
+      expect(placement.id).toBe(placementId);
+      randomUuid.mockRestore();
+    });
+  });
+
+  describe("movement", () => {
+    it("changes only position and preserves every identity", () => {
+      const node = createNode("Conocimiento");
+      const canvas = createCanvas("Principal");
+      const placement = createPlacement(canvas.id, node.id, { x: 0, y: 0 });
+
+      const moved = movePlacement(placement, { x: -40.5, y: 330.25 });
+
+      expect(moved).toEqual({
+        id: placement.id,
+        canvasId: placement.canvasId,
+        nodeId: placement.nodeId,
+        position: { x: -40.5, y: 330.25 },
+      });
+    });
+
+    it.each([
+      ["NaN", Number.NaN],
+      ["Infinity", Number.POSITIVE_INFINITY],
+      ["-Infinity", Number.NEGATIVE_INFINITY],
+    ])("rejects %s coordinates", (_label, coordinate) => {
+      const node = createNode("Conocimiento");
+      const canvas = createCanvas("Principal");
+      const placement = createPlacement(canvas.id, node.id, { x: 0, y: 0 });
+
+      expect(() => movePlacement(placement, { x: coordinate, y: 0 })).toThrow(
+        "Placement coordinates must be finite numbers.",
+      );
+      expect(() => movePlacement(placement, { x: 0, y: coordinate })).toThrow(
+        "Placement coordinates must be finite numbers.",
+      );
+    });
   });
 });

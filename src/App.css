@@ -1,5 +1,5 @@
 :root {
-  font-family: system-ui, sans-serif;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
   color: #172018;
   background: #eef2eb;
   font-synthesis: none;
@@ -15,80 +15,14 @@ body {
 }
 
 button,
-input,
-textarea {
+input {
   font: inherit;
-}
-
-.slice {
-  width: min(720px, calc(100% - 32px));
-  margin: 40px auto;
-  display: grid;
-  gap: 20px;
-}
-
-header,
-section {
-  padding: 24px;
-  border: 1px solid #cbd5c8;
-  border-radius: 12px;
-  background: #fff;
-}
-
-h1,
-h2,
-p {
-  margin-top: 0;
-}
-
-h2 {
-  font-size: 1.1rem;
-}
-
-.eyebrow {
-  margin-bottom: 4px;
-  color: #526354;
-  font-size: 0.8rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-form,
-label {
-  display: grid;
-  gap: 8px;
-}
-
-form {
-  gap: 16px;
-}
-
-input,
-textarea {
-  width: 100%;
-  padding: 10px 12px;
-  border: 1px solid #9aaa98;
-  border-radius: 6px;
-  color: inherit;
-  background: #fff;
-}
-
-textarea {
-  resize: vertical;
-}
-
-.actions {
-  margin-top: 16px;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
 }
 
 button {
   padding: 10px 14px;
   border: 1px solid #425c45;
-  border-radius: 6px;
+  border-radius: 7px;
   color: #fff;
   background: #425c45;
   cursor: pointer;
@@ -99,11 +33,183 @@ button:disabled {
   opacity: 0.55;
 }
 
-.result {
+input {
+  min-width: 0;
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #9aaa98;
+  border-radius: 7px;
+  color: inherit;
+  background: #fff;
+}
+
+.slice {
+  width: min(1120px, calc(100% - 32px));
+  margin: 32px auto;
+  display: grid;
+  gap: 18px;
+}
+
+.slice-header,
+section {
+  padding: 22px;
+  border: 1px solid #cbd5c8;
+  border-radius: 12px;
+  background: #fff;
+}
+
+.slice-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+h1,
+h2,
+p {
+  margin-top: 0;
+}
+
+h1 {
+  margin-bottom: 8px;
+}
+
+h2 {
+  margin-bottom: 12px;
+  font-size: 1.1rem;
+}
+
+.eyebrow {
+  margin-bottom: 4px;
+  color: #526354;
+  font-size: 0.78rem;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.status {
+  min-width: 110px;
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 999px;
+  color: #314333;
+  background: #e5ece2;
+  text-align: center;
+  font-weight: 650;
+}
+
+.loader form {
+  display: grid;
+  gap: 7px;
+}
+
+.load-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+}
+
+.empty-state {
+  min-height: 260px;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  text-align: center;
+}
+
+.canvas-panel {
+  padding: 0;
+  overflow: hidden;
+}
+
+.canvas-heading {
+  min-height: 78px;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid #dbe2d8;
+}
+
+.canvas-heading h2,
+.canvas-heading p {
+  margin-bottom: 0;
+}
+
+code,
+dd {
+  overflow-wrap: anywhere;
+  font-family: ui-monospace, "Cascadia Code", monospace;
+  font-size: 0.78rem;
+}
+
+.flow-canvas {
+  height: 430px;
+  background: #f6f8f4;
+}
+
+.react-flow__node-default {
+  width: 180px;
+  padding: 14px;
+  border-color: #769177;
+  border-radius: 9px;
+  color: #172018;
+  background: #fff;
+  box-shadow: 0 8px 24px rgb(31 50 33 / 10%);
+  font-weight: 650;
+}
+
+.identity-list {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.identity-card {
+  min-width: 0;
+  padding: 14px;
+  border: 1px solid #dbe2d8;
+  border-radius: 9px;
   background: #f8faf6;
 }
 
-output {
-  overflow-wrap: anywhere;
-  font-family: ui-monospace, monospace;
+dl {
+  margin: 12px 0 0;
+  display: grid;
+  gap: 8px;
+}
+
+dl div {
+  display: grid;
+  gap: 2px;
+}
+
+dt {
+  color: #607062;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+dd {
+  margin: 0;
+}
+
+@media (max-width: 720px) {
+  .slice-header,
+  .canvas-heading {
+    display: grid;
+  }
+
+  .status {
+    justify-self: start;
+  }
+
+  .load-row,
+  .identity-list {
+    grid-template-columns: 1fr;
+  }
 }
