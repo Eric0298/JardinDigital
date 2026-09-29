@@ -1,13 +1,15 @@
 import type { Node as ReactFlowNode } from "@xyflow/react";
-import type { Node } from "../../domain/node";
+import type { Node, NodeId } from "../../domain/node";
 import type { Placement, PlacementId } from "../../domain/placement";
 
-export type CanvasFlowNode = ReactFlowNode<{
-  label: string;
+export interface CanvasNodeData extends Record<string, unknown> {
+  title: string;
   content: string;
-  nodeId: string;
+  nodeId: NodeId;
   placementId: PlacementId;
-}>;
+}
+
+export type CanvasFlowNode = ReactFlowNode<CanvasNodeData, "knowledge">;
 
 export function toReactFlowNode(
   node: Node,
@@ -19,12 +21,13 @@ export function toReactFlowNode(
 
   return {
     id: placement.id,
+    type: "knowledge",
     position: {
       x: placement.position.x,
       y: placement.position.y,
     },
     data: {
-      label: node.title || node.content,
+      title: node.title,
       content: node.content,
       nodeId: node.id,
       placementId: placement.id,

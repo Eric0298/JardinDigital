@@ -16,9 +16,10 @@ describe("React Flow canvas adapter", () => {
     const visualNode = toReactFlowNode(node, placement);
 
     expect(visualNode.id).toBe(placement.id);
+    expect(visualNode.type).toBe("knowledge");
     expect(visualNode.position).toEqual(placement.position);
     expect(visualNode.data).toEqual({
-      label: node.title,
+      title: node.title,
       content: node.content,
       nodeId: node.id,
       placementId: placement.id,

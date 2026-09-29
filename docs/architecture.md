@@ -107,6 +107,8 @@ versioned migration. The detailed general model is recorded in
 recorded in [`sqlite-vertical-slice.md`](./sqlite-vertical-slice.md), and the
 Canvas slice in
 [`canvas-placement-vertical-slice.md`](./canvas-placement-vertical-slice.md).
+The current selection and persistent Node-editing interaction is recorded in
+[`canvas-node-editing.md`](./canvas-node-editing.md).
 
 ## Native boundary
 
