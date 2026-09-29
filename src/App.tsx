@@ -1,12 +1,14 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import {
   Background,
   ReactFlow,
   applyNodeChanges,
   type NodeChange,
   type OnNodeDrag,
+  type ReactFlowInstance,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
+import { createNodeInCanvas } from "./application/createNodeInCanvas";
 import {
   createDemoCanvas,
   loadCanvasView,
@@ -15,7 +17,7 @@ import {
 } from "./application/canvasView";
 import { moveNodeInCanvas } from "./application/placementPersistence";
 import type { CanvasId } from "./domain/canvas";
-import type { PlacementId } from "./domain/placement";
+import type { PlacementId, Position } from "./domain/placement";
 import {
   toReactFlowNodes,
   type CanvasFlowNode,
@@ -23,6 +25,11 @@ import {
 import "./App.css";
 
 interface AppProps extends CanvasViewDependencies {}
+
+interface QuickNodeDraft {
+  readonly position: Position;
+  readonly inputPosition: Position;
+}
 
 function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : "Unexpected error.";
@@ -44,11 +51,24 @@ function App({
   const [status, setStatus] = useState("Ready.");
   const [busy, setBusy] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [quickNodeDraft, setQuickNodeDraft] =
+    useState<QuickNodeDraft | null>(null);
+  const [quickNodeTitle, setQuickNodeTitle] = useState("");
+  const flowInstance = useRef<ReactFlowInstance<CanvasFlowNode> | null>(null);
+  const flowCanvas = useRef<HTMLDivElement | null>(null);
+  const quickNodeInput = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    quickNodeInput.current?.focus();
+  }, [quickNodeDraft]);
 
   function showView(nextView: CanvasView) {
     setView(nextView);
     setFlowNodes(toReactFlowNodes(nextView.nodes, nextView.placements));
     setCanvasId(nextView.canvas.id);
+    setQuickNodeDraft(null);
+    setQuickNodeTitle("");
   }
 
   async function run(action: () => Promise<void>) {
@@ -100,11 +120,84 @@ function App({
     setFlowNodes((current) => applyNodeChanges(changes, current));
   }
 
+  function handlePaneClick(event: React.MouseEvent) {
+    if (
+      event.detail !== 2 ||
+      view === null ||
+      busy ||
+      saving ||
+      creating
+    ) {
+      return;
+    }
+
+    const instance = flowInstance.current;
+    const bounds = flowCanvas.current?.getBoundingClientRect();
+
+    if (instance === null || bounds === undefined) {
+      setStatus("Error: Canvas coordinates are not available.");
+      return;
+    }
+
+    setQuickNodeTitle("");
+    setQuickNodeDraft({
+      position: instance.screenToFlowPosition({
+        x: event.clientX,
+        y: event.clientY,
+      }),
+      inputPosition: {
+        x: event.clientX - bounds.left,
+        y: event.clientY - bounds.top,
+      },
+    });
+    setStatus("Enter a title.");
+  }
+
+  function cancelQuickNode() {
+    setQuickNodeDraft(null);
+    setQuickNodeTitle("");
+    setStatus("Creation cancelled.");
+  }
+
+  function submitQuickNode(event: FormEvent) {
+    event.preventDefault();
+
+    if (view === null || quickNodeDraft === null || creating) {
+      return;
+    }
+
+    const currentView = view;
+    const draft = quickNodeDraft;
+    setCreating(true);
+    setStatus("Creating...");
+
+    void createNodeInCanvas(
+      dependencies,
+      currentView.canvas.id,
+      quickNodeTitle,
+      draft.position,
+    )
+      .then(({ node, placement }) => {
+        const nextView: CanvasView = {
+          ...currentView,
+          nodes: [...currentView.nodes, node],
+          placements: [...currentView.placements, placement],
+        };
+        showView(nextView);
+        setStatus("Created.");
+      })
+      .catch((error: unknown) => {
+        setStatus(`Error: ${errorMessage(error)}`);
+        requestAnimationFrame(() => quickNodeInput.current?.focus());
+      })
+      .finally(() => setCreating(false));
+  }
+
   const handleNodeDragStop: OnNodeDrag<CanvasFlowNode> = (
     _event,
     visualNode,
   ) => {
-    if (view === null || saving) {
+    if (view === null || saving || creating) {
       return;
     }
 
@@ -187,19 +280,52 @@ function App({
               </div>
               <code>{view.canvas.id}</code>
             </div>
-            <div className="flow-canvas">
+            <div className="flow-canvas" ref={flowCanvas}>
               <ReactFlow<CanvasFlowNode>
                 nodes={flowNodes}
                 edges={[]}
+                onInit={(instance) => {
+                  flowInstance.current = instance;
+                }}
                 onNodesChange={handleNodesChange}
                 onNodeDragStop={handleNodeDragStop}
-                nodesDraggable={!busy && !saving}
+                onPaneClick={handlePaneClick}
+                nodesDraggable={!busy && !saving && !creating}
                 nodesConnectable={false}
                 elementsSelectable
                 fitView
+                zoomOnDoubleClick={false}
               >
                 <Background />
               </ReactFlow>
+              {quickNodeDraft !== null ? (
+                <form
+                  className="quick-node-form nodrag nowheel nopan"
+                  style={{
+                    left: quickNodeDraft.inputPosition.x,
+                    top: quickNodeDraft.inputPosition.y,
+                  }}
+                  onSubmit={submitQuickNode}
+                  onDoubleClick={(event) => event.stopPropagation()}
+                >
+                  <label htmlFor="quick-node-title">New idea title</label>
+                  <input
+                    id="quick-node-title"
+                    ref={quickNodeInput}
+                    value={quickNodeTitle}
+                    onChange={(event) => setQuickNodeTitle(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Escape") {
+                        event.preventDefault();
+                        cancelQuickNode();
+                      }
+                    }}
+                    disabled={creating}
+                    autoFocus
+                    placeholder="Idea title"
+                  />
+                </form>
+              ) : null}
             </div>
           </section>
 
