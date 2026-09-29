@@ -101,8 +101,8 @@ belong to the loading/use-case boundary once those rules are defined.
 
 SQLite is responsible for structured, queryable state and transactional
 consistency. The filesystem is responsible for byte-oriented content. Large
-files as SQLite BLOBs: **no**. Exact tables and physical directories are not
-defined here.
+files as SQLite BLOBs: **no**. The first implemented table contains only the
+Node fields `id`, `title`, and `content`; later schemas remain undefined here.
 
 ## 7. Resource
 
@@ -171,8 +171,10 @@ Cancellation leaves the prior reference and unavailable state intact.
 ## 11. internal App Data and a portable Vault
 
 Internal App Data is the operating-system-appropriate private location for
-JardinDigital's operational database and future managed files. The application
-chooses and controls it; users should not need to manage it for normal use.
+JardinDigital's operational database and future managed files. The implemented
+Node database is `jardindigital.db`, resolved by the official Tauri SQL plugin
+below its AppConfig directory. The application chooses and controls it; users
+should not need to manage it for normal use.
 
 A visible Vault or portable Workspace would be a separate future product
 capability for moving, exporting, or backing up a self-contained garden. It is
@@ -232,10 +234,11 @@ worker, size limit, or scheduler is designed in this phase.
 ## 16. Tauri boundary
 
 The frontend may request narrow operations that express JardinDigital use
-cases, such as loading or saving specific information, choosing a file,
-importing or linking a resource, relinking, or starting a future backup/export.
-Tauri/native code owns the privileged SQLite and filesystem operations and
-returns bounded results and explicit errors.
+cases. For the implemented Node slice, React calls Application functions
+through a Node-specific persistence port; a single Infrastructure adapter owns
+the official Tauri SQL binding, connection URL, parameterized SQL, and row
+rehydration. Filesystem operations and future resource behavior remain native
+boundary concerns.
 
 - Arbitrary SQL from UI: **no**.
 - Arbitrary filesystem access from UI: **no**.
@@ -246,8 +249,10 @@ case. No native operation is introduced by this design.
 
 ## 17. Rule for repositories
 
-Repositories in #07: **no**. A persistence port appears only when a real
-application use case needs to be decoupled from a technical implementation.
+Repositories in #07: **no**. The first real persistence use case now justifies
+one `NodePersistence` port with only `save` and `load`. It decouples the three
+Node application functions from the SQLite adapter without creating a generic
+repository or contracts for other entities.
 Before adding one, answer:
 
 1. What current problem does it solve?
@@ -270,11 +275,12 @@ Create a valid Node
   -> reload and verify the same ID and edited values
 ```
 
-This is enough to validate the first end-to-end path through UI, an application
-use case, a narrow Tauri boundary, SQLite storage, rehydration, invariant
-validation, stable identity, and update behavior. It intentionally excludes
-filesystem concerns and avoids pretending that all entities must be persisted
-at once.
+This flow is implemented and was validated across a complete application
+close/reopen on 2026-09-29. SQLite storage, rehydration, invariant validation,
+stable identity, upsert behavior, and reload succeeded. Implementation details
+and the observed result are recorded in
+[`sqlite-vertical-slice.md`](./sqlite-vertical-slice.md). Filesystem concerns
+and all other entities remain excluded.
 
 ## 19. Incremental order after Node
 
@@ -294,9 +300,9 @@ and tests. Dependency order, not table count, determines sequencing.
 
 The following remain open until a concrete use case supplies constraints:
 
-- exact SQL schema, table and column names, indexes, concrete foreign keys, and
-  migrations;
-- SQLite library, connection lifecycle, transaction details, and ORM choice;
+- SQL schemas, indexes, foreign keys, and migrations beyond Node;
+- connection and transaction behavior beyond the official plugin lifecycle and
+  the current single-statement Node operations;
 - timestamps, lifecycle semantics, soft delete, deletion, and cascades;
 - duplicate Edge policy and aggregate boundaries;
 - Node/Resource association and cardinality;
@@ -304,7 +310,8 @@ The following remain open until a concrete use case supplies constraints:
   import behavior, and exact storage records;
 - hashing, deduplication, watchers, automatic relocation, and synchronization;
 - preview generation, cache layout, and cache limits;
-- physical App Data layout and exact cross-platform path representation;
+- physical App Data layout beyond the plugin-managed Node database and exact
+  path representation for future resources;
 - visible Vault/Workspace behavior;
 - export/import formats, backup format/UI, and restore behavior;
 - filesystem abstraction;

@@ -8,7 +8,10 @@ export interface Node {
   readonly content: string;
 }
 
-export function createNode(title: string, content = ""): Node {
+const NODE_ID_PATTERN =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function normalizeNodeContent(title: string, content: string) {
   const normalizedTitle = title.trim();
   const normalizedContent = content.trim();
 
@@ -16,9 +19,36 @@ export function createNode(title: string, content = ""): Node {
     throw new Error("Node title and content must not both be empty.");
   }
 
+  return { title: normalizedTitle, content: normalizedContent };
+}
+
+export function createNode(title: string, content = ""): Node {
+  const normalized = normalizeNodeContent(title, content);
+
   return {
     id: globalThis.crypto.randomUUID() as NodeId,
-    title: normalizedTitle,
-    content: normalizedContent,
+    ...normalized,
+  };
+}
+
+export function editNode(node: Node, title: string, content = ""): Node {
+  return {
+    id: node.id,
+    ...normalizeNodeContent(title, content),
+  };
+}
+
+export function rehydrateNode(
+  id: string,
+  title: string,
+  content = "",
+): Node {
+  if (!NODE_ID_PATTERN.test(id)) {
+    throw new Error("Node id must be a valid application UUID.");
+  }
+
+  return {
+    id: id as NodeId,
+    ...normalizeNodeContent(title, content),
   };
 }

@@ -25,11 +25,12 @@ code that solves a current problem.
 - **UI** is the React presentation layer: views, components, styles, and user
   interaction. It must not define JardinDigital's persistent model.
 
-The real domain model now justifies `src/domain`. Application and Infrastructure
-remain conceptual until they contain code that solves a current problem. The
-existing `src/App.tsx` is the UI root and `src/main.tsx` remains the frontend
-entry point. The `@` alias is intentionally deferred because there are no deep
-imports to simplify.
+The real domain model lives in `src/domain`. The first Node persistence flow now
+justifies `src/application`, containing its narrow persistence port and use-case
+functions, and `src/infrastructure`, containing the SQLite implementation.
+`src/App.tsx` remains the UI root and `src/main.tsx` is both the frontend entry
+point and the composition root that injects the concrete adapter. The `@` alias
+is intentionally deferred because there are no deep imports to simplify.
 
 ## Dependency rules
 
@@ -82,25 +83,30 @@ No global state library is justified at this stage.
 
 ## Persistence direction
 
-Local persistence separates structured state from file content. A future
-SQLite database will store entities, relationships, positions, and justified
-structured metadata. Binary Resource content belongs on the filesystem and
+Local persistence separates structured state from file content. The first
+implemented slice stores Node data in SQLite through the official Tauri 2 SQL
+plugin. Future slices may add justified entities, relationships, positions,
+and structured metadata. Binary Resource content belongs on the filesystem and
 large files must not be stored as SQLite BLOBs. Linked Resources are the
 lightweight-first default; a Managed copy is an explicit user choice.
 
 Application-generated IDs must survive rehydration unchanged, and domain
 invariants remain valid at the load boundary. Internal App Data is sufficient
 for the initial product; a user-visible Vault is a distinct, deferred feature.
-The detailed decisions and deferred implementation choices are recorded in
-[`persistence-model.md`](./persistence-model.md).
+The database uses the plugin's OS-specific AppConfig location and an official
+versioned migration. The detailed general model is recorded in
+[`persistence-model.md`](./persistence-model.md); the implemented Node slice is
+recorded in [`sqlite-vertical-slice.md`](./sqlite-vertical-slice.md).
 
 ## Native boundary
 
 Tauri capabilities must be narrow, explicit, and aligned with real
-JardinDigital behavior. The UI must not receive generic APIs for arbitrary SQL,
-filesystem access, system commands, or unrestricted operating-system access.
-Future native operations should express specific behavior, such as importing a
-resource or creating a backup. No native operation is introduced yet.
+JardinDigital behavior. The Node slice grants only the official SQL plugin's
+default load/select/close set and execute permission. React components do not
+import the plugin or contain SQL; SQL is centralized in the infrastructure
+adapter. The plugin permissions are command-granular, so future behavior that
+needs a narrower security boundary may justify dedicated native commands. No
+filesystem, shell, HTTP, or dialog capability is granted.
 
 ## Abstraction rule
 
@@ -114,8 +120,9 @@ An abstraction is introduced only when the answers justify its immediate cost.
 
 ## Decisions intentionally deferred
 
-- SQLite library, physical schema, ORM, and migrations
-- Physical storage layout and path representation
+- Schemas and migrations beyond the implemented Node table
+- Physical storage layout and path representation beyond the plugin-managed
+  Node database
 - User-visible Vault and portable Workspace behavior
 - Resource associations, types, and storage metadata
 - Backup, import/export, previews, and cache implementation

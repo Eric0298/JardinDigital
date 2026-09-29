@@ -1,7 +1,7 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { createCanvas, type CanvasId } from "./canvas";
 import { createEdge } from "./edge";
-import { createNode, type NodeId } from "./node";
+import { createNode, editNode, rehydrateNode, type NodeId } from "./node";
 import { createPlacement } from "./placement";
 import { createResource } from "./resource";
 
@@ -56,6 +56,79 @@ describe("Node", () => {
     expect(first.id).toMatch(UUID_PATTERN);
     expect(second.id).toMatch(UUID_PATTERN);
     expect(first.id).not.toBe(second.id);
+  });
+
+  it("edits a node without changing its identity", () => {
+    const node = createNode("Original", "Content");
+
+    const edited = editNode(node, "  Updated  ", "  New content  ");
+
+    expect(edited).toEqual({
+      id: node.id,
+      title: "Updated",
+      content: "New content",
+    });
+  });
+
+  describe("rehydration", () => {
+    const storedId = "d76f7bb8-9f8f-4f5c-b8a4-4d46202ce34a";
+
+    it("preserves exactly the provided identity", () => {
+      const node = rehydrateNode(storedId, "Title", "Content");
+
+      expect(node.id).toBe(storedId);
+    });
+
+    it("normalizes the title", () => {
+      const node = rehydrateNode(storedId, "  Title  ", "Content");
+
+      expect(node.title).toBe("Title");
+    });
+
+    it("normalizes the content", () => {
+      const node = rehydrateNode(storedId, "Title", "  Content  ");
+
+      expect(node.content).toBe("Content");
+    });
+
+    it("allows an empty title when content has a value", () => {
+      const node = rehydrateNode(storedId, "   ", "Content");
+
+      expect(node.title).toBe("");
+      expect(node.content).toBe("Content");
+    });
+
+    it("allows empty content when the title has a value", () => {
+      const node = rehydrateNode(storedId, "Title", "   ");
+
+      expect(node.title).toBe("Title");
+      expect(node.content).toBe("");
+    });
+
+    it("rejects an empty or whitespace-only title and content", () => {
+      expect(() => rehydrateNode(storedId, "", "")).toThrow(
+        "Node title and content must not both be empty.",
+      );
+      expect(() => rehydrateNode(storedId, "   ", "   ")).toThrow(
+        "Node title and content must not both be empty.",
+      );
+    });
+
+    it("rejects an invalid stored identity", () => {
+      expect(() => rehydrateNode("not-a-uuid", "Title", "Content")).toThrow(
+        "Node id must be a valid application UUID.",
+      );
+    });
+
+    it("does not generate a new identity", () => {
+      const randomUuid = vi.spyOn(globalThis.crypto, "randomUUID");
+
+      const node = rehydrateNode(storedId, "Title");
+
+      expect(randomUuid).not.toHaveBeenCalled();
+      expect(node.id).toBe(storedId);
+      randomUuid.mockRestore();
+    });
   });
 });
 
