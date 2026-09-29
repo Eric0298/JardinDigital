@@ -1,0 +1,24 @@
+import type { Edge } from "../domain/edge";
+import type { NodeId } from "../domain/node";
+
+export interface EdgePersistence {
+  save(edge: Edge): Promise<void>;
+  loadBetweenNodes(nodeIds: readonly NodeId[]): Promise<Edge[]>;
+}
+
+export class EdgePersistenceError extends Error {
+  readonly cause: unknown;
+
+  constructor(message: string, cause: unknown) {
+    super(message);
+    this.name = "EdgePersistenceError";
+    this.cause = cause;
+  }
+}
+
+export class InvalidPersistedEdgeError extends EdgePersistenceError {
+  constructor(cause: unknown) {
+    super("Persisted Edge data is invalid.", cause);
+    this.name = "InvalidPersistedEdgeError";
+  }
+}

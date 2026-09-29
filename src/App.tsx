@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import {
   Background,
   ReactFlow,
@@ -6,10 +6,12 @@ import {
   type NodeChange,
   type NodeMouseHandler,
   type NodeTypes,
+  type OnConnect,
   type OnNodeDrag,
   type ReactFlowInstance,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
+import { createEdgeInCanvas } from "./application/createEdgeInCanvas";
 import { createNodeInCanvas } from "./application/createNodeInCanvas";
 import {
   createDemoCanvas,
@@ -24,6 +26,7 @@ import type { NodeId } from "./domain/node";
 import type { PlacementId, Position } from "./domain/placement";
 import { KnowledgeNode } from "./presentation/canvas/KnowledgeNode";
 import {
+  toReactFlowEdges,
   toReactFlowNodes,
   type CanvasFlowNode,
 } from "./presentation/canvas/reactFlowAdapter";
@@ -53,11 +56,13 @@ function errorMessage(error: unknown) {
 
 function App({
   canvasPersistence,
+  edgePersistence,
   nodePersistence,
   placementPersistence,
 }: AppProps) {
   const dependencies = {
     canvasPersistence,
+    edgePersistence,
     nodePersistence,
     placementPersistence,
   };
@@ -68,6 +73,7 @@ function App({
   const [busy, setBusy] = useState(false);
   const [saving, setSaving] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [connecting, setConnecting] = useState(false);
   const [quickNodeDraft, setQuickNodeDraft] =
     useState<QuickNodeDraft | null>(null);
   const [quickNodeTitle, setQuickNodeTitle] = useState("");
@@ -79,6 +85,11 @@ function App({
   const quickNodeInput = useRef<HTMLInputElement | null>(null);
   const nodeEditTitle = useRef<HTMLInputElement | null>(null);
   const nodeEditContent = useRef<HTMLTextAreaElement | null>(null);
+  const flowEdges = useMemo(
+    () =>
+      view === null ? [] : toReactFlowEdges(view.edges, view.placements),
+    [view],
+  );
 
   useEffect(() => {
     quickNodeInput.current?.focus();
@@ -118,6 +129,11 @@ function App({
 
   function load(event: FormEvent) {
     event.preventDefault();
+
+    if (connecting || creating) {
+      return;
+    }
+
     void run(async () => {
       const normalizedId = canvasId.trim();
 
@@ -152,7 +168,7 @@ function App({
   ) => {
     event.stopPropagation();
 
-    if (view === null || busy || saving || creating) {
+    if (view === null || busy || saving || creating || connecting) {
       return;
     }
 
@@ -243,6 +259,7 @@ function App({
       busy ||
       saving ||
       creating ||
+      connecting ||
       nodeEditDraft !== null
     ) {
       return;
@@ -314,7 +331,7 @@ function App({
     _event,
     visualNode,
   ) => {
-    if (view === null || saving || creating) {
+    if (view === null || saving || creating || connecting) {
       return;
     }
 
@@ -341,6 +358,34 @@ function App({
         setStatus(`Error: ${errorMessage(error)}`);
       })
       .finally(() => setSaving(false));
+  };
+
+  const handleConnect: OnConnect = (connection) => {
+    if (view === null || busy || saving || creating || connecting) {
+      return;
+    }
+
+    const currentView = view;
+    setConnecting(true);
+    setStatus("Connecting...");
+
+    void createEdgeInCanvas(
+      dependencies,
+      currentView.canvas.id,
+      connection.source as PlacementId,
+      connection.target as PlacementId,
+    )
+      .then((edge) => {
+        setView({
+          ...currentView,
+          edges: [...currentView.edges, edge],
+        });
+        setStatus("Connected.");
+      })
+      .catch((error: unknown) => {
+        setStatus(`Error: ${errorMessage(error)}`);
+      })
+      .finally(() => setConnecting(false));
   };
 
   return (
@@ -377,7 +422,7 @@ function App({
           <div className="flow-canvas" ref={flowCanvas}>
             <ReactFlow<CanvasFlowNode>
               nodes={flowNodes}
-              edges={[]}
+              edges={flowEdges}
               nodeTypes={nodeTypes}
               onInit={(instance) => {
                 flowInstance.current = instance;
@@ -385,11 +430,22 @@ function App({
               onNodesChange={handleNodesChange}
               onNodeDoubleClick={handleNodeDoubleClick}
               onNodeDragStop={handleNodeDragStop}
+              onConnect={handleConnect}
               onPaneClick={handlePaneClick}
               nodesDraggable={
-                !busy && !saving && !creating && nodeEditDraft === null
+                !busy &&
+                !saving &&
+                !creating &&
+                !connecting &&
+                nodeEditDraft === null
               }
-              nodesConnectable={false}
+              nodesConnectable={
+                !busy &&
+                !saving &&
+                !creating &&
+                !connecting &&
+                nodeEditDraft === null
+              }
               elementsSelectable
               fitView
               zoomOnDoubleClick={false}
@@ -518,10 +574,13 @@ function App({
                   id="canvas-id"
                   value={canvasId}
                   onChange={(event) => setCanvasId(event.target.value)}
-                  disabled={busy || saving}
+                  disabled={busy || saving || creating || connecting}
                   placeholder="Paste the ID after restarting"
                 />
-                <button type="submit" disabled={busy || saving}>
+                <button
+                  type="submit"
+                  disabled={busy || saving || creating || connecting}
+                >
                   Load Canvas
                 </button>
               </div>
@@ -563,6 +622,29 @@ function App({
                   );
                 })}
               </div>
+              {view.edges.length > 0 ? (
+                <div className="edge-identity-list">
+                  {view.edges.map((edge) => (
+                    <article key={edge.id} className="identity-card">
+                      <strong>Edge</strong>
+                      <dl>
+                        <div>
+                          <dt>Edge</dt>
+                          <dd>{edge.id}</dd>
+                        </div>
+                        <div>
+                          <dt>Source Node</dt>
+                          <dd>{edge.sourceNodeId}</dd>
+                        </div>
+                        <div>
+                          <dt>Target Node</dt>
+                          <dd>{edge.targetNodeId}</dd>
+                        </div>
+                      </dl>
+                    </article>
+                  ))}
+                </div>
+              ) : null}
             </section>
           ) : null}
         </div>

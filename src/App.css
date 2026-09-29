@@ -231,6 +231,18 @@ dd {
   -webkit-line-clamp: 3;
 }
 
+.react-flow__handle {
+  width: 10px;
+  height: 10px;
+  border: 2px solid #fff;
+  background: #425c45;
+}
+
+.react-flow__edge-path {
+  stroke: #6f856f;
+  stroke-width: 1.6;
+}
+
 .node-editor {
   position: absolute;
   z-index: 6;
@@ -312,6 +324,13 @@ dd {
   gap: 12px;
 }
 
+.edge-identity-list {
+  margin-top: 12px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
 .identity-card {
   min-width: 0;
   padding: 14px;
@@ -353,7 +372,8 @@ dd {
   }
 
   .load-row,
-  .identity-list {
+  .identity-list,
+  .edge-identity-list {
     grid-template-columns: 1fr;
   }
 }

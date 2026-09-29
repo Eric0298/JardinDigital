@@ -1,7 +1,9 @@
 import { createCanvas, type Canvas, type CanvasId } from "../domain/canvas";
+import type { Edge } from "../domain/edge";
 import { createNode, type Node } from "../domain/node";
 import { createPlacement, type Placement } from "../domain/placement";
 import type { CanvasPersistence } from "./canvasPersistence";
+import type { EdgePersistence } from "./edgePersistence";
 import type { NodePersistence } from "./nodePersistence";
 import type { PlacementPersistence } from "./placementPersistence";
 
@@ -9,10 +11,12 @@ export interface CanvasView {
   readonly canvas: Canvas;
   readonly nodes: Node[];
   readonly placements: Placement[];
+  readonly edges: Edge[];
 }
 
 export interface CanvasViewDependencies {
   readonly canvasPersistence: CanvasPersistence;
+  readonly edgePersistence: EdgePersistence;
   readonly nodePersistence: NodePersistence;
   readonly placementPersistence: PlacementPersistence;
 }
@@ -42,8 +46,11 @@ export async function loadCanvasView(
       return node;
     }),
   );
+  const edges = await dependencies.edgePersistence.loadBetweenNodes(
+    placements.map((placement) => placement.nodeId),
+  );
 
-  return { canvas, nodes, placements };
+  return { canvas, nodes, placements, edges };
 }
 
 export async function createDemoCanvas(
@@ -74,5 +81,5 @@ export async function createDemoCanvas(
     await dependencies.placementPersistence.save(placement);
   }
 
-  return { canvas, nodes, placements };
+  return { canvas, nodes, placements, edges: [] };
 }

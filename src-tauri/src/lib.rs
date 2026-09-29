@@ -32,6 +32,18 @@ pub fn run() {
                   );",
             kind: tauri_plugin_sql::MigrationKind::Up,
         },
+        tauri_plugin_sql::Migration {
+            version: 3,
+            description: "create_edges_table",
+            sql: "CREATE TABLE IF NOT EXISTS edges (
+                    id TEXT PRIMARY KEY NOT NULL,
+                    source_node_id TEXT NOT NULL,
+                    target_node_id TEXT NOT NULL,
+                    FOREIGN KEY(source_node_id) REFERENCES nodes(id),
+                    FOREIGN KEY(target_node_id) REFERENCES nodes(id)
+                  );",
+            kind: tauri_plugin_sql::MigrationKind::Up,
+        },
     ];
 
     tauri::Builder::default()

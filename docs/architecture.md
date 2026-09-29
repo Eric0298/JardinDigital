@@ -25,8 +25,9 @@ code that solves a current problem.
 - **UI** is the React presentation layer: views, components, styles, and user
   interaction. It must not define JardinDigital's persistent model.
 
-The real domain model lives in `src/domain`. Node, Canvas, and Placement now
-have narrow persistence ports and application functions in `src/application`;
+The real domain model lives in `src/domain`. Node, Edge, Canvas, and Placement
+now have narrow persistence ports and application functions in
+`src/application`;
 their SQLite implementations live in `src/infrastructure` and share one lazy
 database load. `src/presentation/canvas` contains the explicit Domain-to-React
 Flow adapter. `src/App.tsx` remains the temporary UI root and `src/main.tsx` is
@@ -70,16 +71,17 @@ Domain -> Canvas adapter -> React Flow
 
 The adapter lives in Presentation, outside Domain. It maps each loaded Node and
 Placement to a visual React Flow Node whose identity is the Placement ID and
-whose position is copied from `Placement.position`. React Flow objects are
-never persisted directly. At drag end the UI sends the visual coordinates
-through Application, which calls Domain `movePlacement()` and persists the
-resulting Placement. These boundaries keep React Flow replaceable without
-requiring a Domain or stored-data migration.
+whose position is copied from `Placement.position`. It maps each Domain Edge
+by resolving both endpoint Node IDs to the Placements in the active Canvas.
+React Flow objects are never persisted directly. At drag end the UI sends the
+visual coordinates through Application, which calls Domain `movePlacement()`
+and persists the resulting Placement. These boundaries keep React Flow
+replaceable without requiring a Domain or stored-data migration.
 
 ## Persistent state vs UI state
 
-Persistent state belongs to the user's garden and survives sessions. Future
-examples include nodes, connections, resources, content, persistent positions,
+Persistent state belongs to the user's garden and survives sessions. Examples
+include nodes, connections, resources, content, persistent positions,
 and persistent settings.
 
 UI state is temporary interaction state. Examples include hover, an open
@@ -90,13 +92,14 @@ No global state library is justified at this stage.
 ## Persistence direction
 
 Local persistence separates structured state from file content. The current
-implementation stores Node, Canvas, and Placement data in SQLite through the
-official Tauri 2 SQL plugin. Migration v1 owns `nodes`; migration v2 adds only
-`canvases` and `placements`. A unique `(canvas_id, node_id)` constraint permits
-one Node in several Canvases while preventing duplicate Placements inside the
-same Canvas. Binary Resource content belongs on the filesystem and
-large files must not be stored as SQLite BLOBs. Linked Resources are the
-lightweight-first default; a Managed copy is an explicit user choice.
+implementation stores Node, Edge, Canvas, and Placement data in SQLite through
+the official Tauri 2 SQL plugin. Migration v1 owns `nodes`; migration v2 adds
+`canvases` and `placements`; migration v3 adds `edges`. A unique
+`(canvas_id, node_id)` constraint permits one Node in several Canvases while
+preventing duplicate Placements inside the same Canvas. Binary Resource content
+belongs on the filesystem and large files must not be stored as SQLite BLOBs.
+Linked Resources are the lightweight-first default; a Managed copy is an
+explicit user choice.
 
 Application-generated IDs must survive rehydration unchanged, and domain
 invariants remain valid at the load boundary. Internal App Data is sufficient
@@ -108,7 +111,8 @@ recorded in [`sqlite-vertical-slice.md`](./sqlite-vertical-slice.md), and the
 Canvas slice in
 [`canvas-placement-vertical-slice.md`](./canvas-placement-vertical-slice.md).
 The current selection and persistent Node-editing interaction is recorded in
-[`canvas-node-editing.md`](./canvas-node-editing.md).
+[`canvas-node-editing.md`](./canvas-node-editing.md). Persistent connection
+creation is recorded in [`canvas-edge-connection.md`](./canvas-edge-connection.md).
 
 ## Native boundary
 
@@ -132,13 +136,13 @@ An abstraction is introduced only when the answers justify its immediate cost.
 
 ## Decisions intentionally deferred
 
-- Schemas and migrations beyond Node, Canvas, and Placement
+- Schemas and migrations beyond Node, Edge, Canvas, and Placement
 - Physical storage layout and path representation beyond the plugin-managed
   Node database
 - User-visible Vault and portable Workspace behavior
 - Resource associations, types, and storage metadata
 - Backup, import/export, previews, and cache implementation
-- Production Canvas composition, Edge behavior, and viewport persistence
+- Edge editing/deletion and viewport persistence
 - Global state management
 - Router
 - Automated native SQLite integration testing

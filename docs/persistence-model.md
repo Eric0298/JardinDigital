@@ -68,14 +68,15 @@ Rehydrated entity: stored identity + stored values -> validate -> same entity ID
 
 The current `createNode`, `createEdge`, `createResource`, `createCanvas`, and
 `createPlacement` functions generate identities for new entities. The
-implemented Node, Canvas, and Placement load paths instead use entity-specific
-rehydration functions so stored identities and references survive unchanged.
+implemented Node, Edge, Canvas, and Placement load paths instead use
+entity-specific rehydration functions so stored identities and references
+survive unchanged.
 
 Each rehydration function accepts existing IDs and current values, normalizes
 or validates them with the entity's invariant rules, and returns those IDs
 unchanged. `movePlacement` likewise preserves Placement, Canvas, and Node
 identity while replacing only the validated finite position. These are not
-generic factories; Edge and Resource rehydration remain deferred.
+generic factories; Resource rehydration remains deferred.
 
 Domain invariants still apply during rehydration. Stored data can be old,
 corrupt, manually altered, or produced by faulty code; turning invalid rows
@@ -103,7 +104,9 @@ consistency. The filesystem is responsible for byte-oriented content. Large
 files as SQLite BLOBs: **no**. Migration v1 contains the Node fields `id`,
 `title`, and `content`. Migration v2 adds Canvas `id/title` and Placement
 `id/canvas_id/node_id/x/y`, with foreign keys to Canvas and Node plus
-`UNIQUE(canvas_id, node_id)`.
+`UNIQUE(canvas_id, node_id)`. Migration v3 adds Edge
+`id/source_node_id/target_node_id`, with both endpoints referencing Node and no
+Canvas or Placement identity.
 
 ## 7. Resource
 
@@ -235,7 +238,7 @@ worker, size limit, or scheduler is designed in this phase.
 ## 16. Tauri boundary
 
 The frontend may request narrow operations that express JardinDigital use
-cases. React calls Application functions through Node-, Canvas-, and
+cases. React calls Application functions through Node-, Edge-, Canvas-, and
 Placement-specific persistence ports. Infrastructure adapters own the official
 Tauri SQL binding, parameterized SQL, and row rehydration, while one small
 Infrastructure module owns the shared lazy `Database.load()` and connection
@@ -251,10 +254,11 @@ case. No native operation is introduced by this design.
 
 ## 17. Rule for repositories
 
-Generic repositories: **no**. Current use cases justify three narrow ports:
+Generic repositories: **no**. Current use cases justify four narrow ports:
 Node and Canvas each expose only `save/load`; Placement exposes
-`save/load/loadForCanvas`. They decouple Application from SQLite without a base
-repository, factory, manager, or query framework.
+`save/load/loadForCanvas`; Edge exposes `save/loadBetweenNodes`. They decouple
+Application from SQLite without a base repository, factory, manager, or query
+framework.
 Before adding one, answer:
 
 1. What current problem does it solve?
@@ -282,13 +286,11 @@ close/reopen on 2026-09-29. SQLite storage, rehydration, invariant validation,
 stable identity, upsert behavior, and reload succeeded. Implementation details
 and the observed result are recorded in
 [`sqlite-vertical-slice.md`](./sqlite-vertical-slice.md). Filesystem concerns
-and all other entities remain excluded.
+from that historical slice.
 
-## 19. Incremental order after Canvas and Placement
+## 19. Incremental order after Edge
 
-1. **Edge**: depends on persisted Nodes and adds Node-to-Node relationships;
-   doing it after Placement keeps the first canvas slice focused.
-2. **Resource**: comes later because storage mode, file operations, and its
+1. **Resource**: comes later because storage mode, file operations, and its
    relationship with Node still need validated use cases.
 
 Each step should be a complete vertical slice with its own load/save behavior
@@ -298,12 +300,12 @@ and tests. Dependency order, not table count, determines sequencing.
 
 The following remain open until a concrete use case supplies constraints:
 
-- SQL schemas, indexes, foreign keys, and migrations beyond Node, Canvas, and
-  Placement;
+- SQL schemas, indexes, foreign keys, and migrations beyond Node, Edge, Canvas,
+  and Placement;
 - transactional orchestration for multi-entity operations; the current demo
   Canvas creation is intentionally sequential and non-transactional;
 - timestamps, lifecycle semantics, soft delete, deletion, and cascades;
-- duplicate Edge policy and aggregate boundaries;
+- Edge editing/deletion and aggregate boundaries;
 - Node/Resource association and cardinality;
 - Resource kinds, whether storage mode has domain meaning, file metadata,
   import behavior, and exact storage records;

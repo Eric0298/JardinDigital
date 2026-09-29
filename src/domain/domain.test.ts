@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { createCanvas, rehydrateCanvas, type CanvasId } from "./canvas";
-import { createEdge } from "./edge";
+import { createEdge, rehydrateEdge } from "./edge";
 import { createNode, editNode, rehydrateNode, type NodeId } from "./node";
 import {
   createPlacement,
@@ -178,6 +178,41 @@ describe("Edge", () => {
 
     expect(edge.sourceNodeId).toBe(node.id);
     expect(edge.targetNodeId).toBe(node.id);
+  });
+
+  it("allows duplicate relationships with distinct identities", () => {
+    const source = createNode("Origen");
+    const target = createNode("Destino");
+
+    const first = createEdge(source.id, target.id);
+    const second = createEdge(source.id, target.id);
+
+    expect(first.id).not.toBe(second.id);
+    expect(first.sourceNodeId).toBe(second.sourceNodeId);
+    expect(first.targetNodeId).toBe(second.targetNodeId);
+  });
+
+  it("rehydrates a stored edge without generating a new identity", () => {
+    const edgeId = "b9df42c8-b8c8-4ac6-8ae5-67a6c61ed2b3";
+    const sourceNodeId = "d76f7bb8-9f8f-4f5c-b8a4-4d46202ce34a";
+    const targetNodeId = "bd6f5914-d63b-4a98-bac5-f65518c1945e";
+    const randomUuid = vi.spyOn(globalThis.crypto, "randomUUID");
+
+    const edge = rehydrateEdge(edgeId, sourceNodeId, targetNodeId);
+
+    expect(edge).toEqual({ id: edgeId, sourceNodeId, targetNodeId });
+    expect(randomUuid).not.toHaveBeenCalled();
+    randomUuid.mockRestore();
+  });
+
+  it.each([
+    ["edge", "invalid", "d76f7bb8-9f8f-4f5c-b8a4-4d46202ce34a", "bd6f5914-d63b-4a98-bac5-f65518c1945e"],
+    ["source", "b9df42c8-b8c8-4ac6-8ae5-67a6c61ed2b3", "invalid", "bd6f5914-d63b-4a98-bac5-f65518c1945e"],
+    ["target", "b9df42c8-b8c8-4ac6-8ae5-67a6c61ed2b3", "d76f7bb8-9f8f-4f5c-b8a4-4d46202ce34a", "invalid"],
+  ])("rejects an invalid stored %s identity", (_label, id, source, target) => {
+    expect(() => rehydrateEdge(id, source, target)).toThrow(
+      "must be a valid application UUID.",
+    );
   });
 });
 

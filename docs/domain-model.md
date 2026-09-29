@@ -11,9 +11,9 @@ and does not contain coordinates.
 
 ## Edge
 
-An Edge is a neutral relationship from one Node to another. It is not a visual
-line and has no Canvas styling. Self-edges are allowed; duplicate-edge policy
-is intentionally deferred.
+An Edge is a neutral directed relationship from one Node to another. It is not
+a visual line and has no Canvas identity or styling. Self-edges and duplicate
+source/target pairs are allowed; each Edge has its own identity.
 
 ## Resource
 
@@ -59,6 +59,6 @@ models or databases.
 - Persistence, repositories, SQLite, ORM, and migrations
 - Managed Resource and Linked Resource
 - Deletion and cascade rules
-- Duplicate-edge policy
+- Edge editing and deletion behavior
 - Production visual Canvas behavior
 - Global state management

@@ -1,4 +1,8 @@
-import type { Node as ReactFlowNode } from "@xyflow/react";
+import type {
+  Edge as ReactFlowEdge,
+  Node as ReactFlowNode,
+} from "@xyflow/react";
+import type { Edge } from "../../domain/edge";
 import type { Node, NodeId } from "../../domain/node";
 import type { Placement, PlacementId } from "../../domain/placement";
 
@@ -10,6 +14,7 @@ export interface CanvasNodeData extends Record<string, unknown> {
 }
 
 export type CanvasFlowNode = ReactFlowNode<CanvasNodeData, "knowledge">;
+export type CanvasFlowEdge = ReactFlowEdge;
 
 export function toReactFlowNode(
   node: Node,
@@ -49,5 +54,33 @@ export function toReactFlowNodes(
     }
 
     return toReactFlowNode(node, placement);
+  });
+}
+
+export function toReactFlowEdges(
+  edges: readonly Edge[],
+  placements: readonly Placement[],
+): CanvasFlowEdge[] {
+  const placementsByNodeId = new Map(
+    placements.map((placement) => [placement.nodeId, placement]),
+  );
+
+  return edges.flatMap((edge) => {
+    const sourcePlacement = placementsByNodeId.get(edge.sourceNodeId);
+    const targetPlacement = placementsByNodeId.get(edge.targetNodeId);
+
+    if (sourcePlacement === undefined || targetPlacement === undefined) {
+      return [];
+    }
+
+    return [
+      {
+        id: edge.id,
+        source: sourcePlacement.id,
+        target: targetPlacement.id,
+        sourceHandle: "source",
+        targetHandle: "target",
+      },
+    ];
   });
 }
