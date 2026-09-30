@@ -98,7 +98,9 @@ No global state library is justified at this stage.
 Local persistence separates structured state from file content. The current
 implementation stores Node, Edge, Canvas, and Placement data in SQLite through
 the official Tauri 2 SQL plugin. Migration v1 owns `nodes`; migration v2 adds
-`canvases` and `placements`; migration v3 adds `edges`. A unique
+`canvases` and `placements`; migration v3 adds `edges`; migration v4 adds the
+narrow `inbox_items` membership relation and its two atomic operation views. A
+unique
 `(canvas_id, node_id)` constraint permits one Node in several Canvases while
 preventing duplicate Placements inside the same Canvas. Binary Resource content
 belongs on the filesystem and large files must not be stored as SQLite BLOBs.
@@ -120,6 +122,8 @@ creation is recorded in [`canvas-edge-connection.md`](./canvas-edge-connection.m
 The product-facing Garden startup, Canvas listing, workspace shell, and
 connection deletion are recorded in
 [`garden-usable-foundation.md`](./garden-usable-foundation.md).
+Capture and Inbox membership, including their narrow atomic SQLite
+transitions, are recorded in [`capture-inbox.md`](./capture-inbox.md).
 
 ## Native boundary
 
@@ -143,7 +147,7 @@ An abstraction is introduced only when the answers justify its immediate cost.
 
 ## Decisions intentionally deferred
 
-- Schemas and migrations beyond Node, Edge, Canvas, and Placement
+- Schemas and migrations beyond Node, Edge, Canvas, Placement, and Inbox
 - Physical storage layout and path representation beyond the plugin-managed
   Node database
 - User-visible Vault and portable Workspace behavior

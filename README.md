@@ -29,10 +29,12 @@ Implemented:
   supports creating and switching Gardens;
 - a React Flow Canvas for creating, editing, moving, and connecting ideas,
   including directed connections, connection deletion, and restart recovery.
+- fast textual Capture into a persistent Inbox, with editing and placement of
+  the same Node into a selected Garden.
 
 Planned, but not implemented as product features yet:
 
-- Capture and Library experiences;
+- Library and Create/output experiences;
 - Resource management and Managed/Linked file behavior;
 - backup, import/export, search, and other later capabilities.
 

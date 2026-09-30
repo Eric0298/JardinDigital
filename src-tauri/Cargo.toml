@@ -22,6 +22,9 @@ tauri-build = { version = "2", features = [] }
 tauri = { version = "2", features = [] }
 tauri-plugin-sql = { version = "2.5.0", default-features = false, features = ["sqlite"] }
 
+[dev-dependencies]
+sqlx = { version = "0.8.6", default-features = false, features = ["sqlite"] }
+
 # Read the optimization guideline for more details: https://tauri.app/concept/size/#cargo-configuration
 [profile.release]
 codegen-units = 1

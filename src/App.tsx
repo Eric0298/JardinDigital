@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { CanvasViewDependencies } from "./application/canvasView";
+import type { InboxPersistence } from "./application/inboxPersistence";
 import {
   createGarden,
   loadGardenStartup,
@@ -7,11 +8,14 @@ import {
 import type { Canvas, CanvasId } from "./domain/canvas";
 import { CreateGardenForm } from "./presentation/garden/CreateGardenForm";
 import { GardenPage } from "./presentation/garden/GardenPage";
+import { InboxPage } from "./presentation/inbox/InboxPage";
 import { ProductShell } from "./presentation/shell/ProductShell";
 import "@xyflow/react/dist/style.css";
 import "./App.css";
 
-interface AppProps extends CanvasViewDependencies {}
+interface AppProps extends CanvasViewDependencies {
+  readonly inboxPersistence: InboxPersistence;
+}
 
 type StartupState = "loading" | "ready" | "error";
 
@@ -22,6 +26,7 @@ function errorMessage(error: unknown) {
 function App({
   canvasPersistence,
   edgePersistence,
+  inboxPersistence,
   nodePersistence,
   placementPersistence,
 }: AppProps) {
@@ -29,12 +34,14 @@ function App({
     () => ({
       canvasPersistence,
       edgePersistence,
+      inboxPersistence,
       nodePersistence,
       placementPersistence,
     }),
     [
       canvasPersistence,
       edgePersistence,
+      inboxPersistence,
       nodePersistence,
       placementPersistence,
     ],
@@ -44,6 +51,9 @@ function App({
   const [gardens, setGardens] = useState<Canvas[]>([]);
   const [activeGarden, setActiveGarden] = useState<Canvas | null>(null);
   const [creatingGarden, setCreatingGarden] = useState(false);
+  const [activeSurface, setActiveSurface] =
+    useState<"garden" | "inbox">("garden");
+  const [captureRequest, setCaptureRequest] = useState(0);
   const [status, setStatus] = useState("Opening your Gardens…");
 
   const openStartup = useCallback(async () => {
@@ -102,7 +112,15 @@ function App({
   }
 
   return (
-    <ProductShell status={status}>
+    <ProductShell
+      activeSurface={activeSurface}
+      status={status}
+      onSurfaceChange={setActiveSurface}
+      onCapture={() => {
+        setActiveSurface("inbox");
+        setCaptureRequest((current) => current + 1);
+      }}
+    >
       {startupState === "loading" ? (
         <section className="startup-state" aria-live="polite">
           <p className="eyebrow">Garden</p>
@@ -121,7 +139,9 @@ function App({
         </section>
       ) : null}
 
-      {startupState === "ready" && activeGarden === null ? (
+      {startupState === "ready" &&
+      activeSurface === "garden" &&
+      activeGarden === null ? (
         <section className="startup-state startup-state--empty">
           <p className="eyebrow">Garden</p>
           <h2>Your garden is empty</h2>
@@ -132,7 +152,9 @@ function App({
         </section>
       ) : null}
 
-      {startupState === "ready" && activeGarden !== null ? (
+      {startupState === "ready" &&
+      activeSurface === "garden" &&
+      activeGarden !== null ? (
         <GardenPage
           activeGarden={activeGarden}
           dependencies={dependencies}
@@ -143,9 +165,20 @@ function App({
         />
       ) : null}
 
+      {startupState === "ready" && activeSurface === "inbox" ? (
+        <InboxPage
+          captureRequest={captureRequest}
+          dependencies={dependencies}
+          gardens={gardens}
+          onCaptureRequestHandled={() => setCaptureRequest(0)}
+          onNewGarden={() => setCreatingGarden(true)}
+          onStatusChange={updateStatus}
+        />
+      ) : null}
+
       {creatingGarden ? (
         <CreateGardenForm
-          canCancel={gardens.length > 0}
+          canCancel={gardens.length > 0 || activeSurface === "inbox"}
           onCancel={() => setCreatingGarden(false)}
           onCreate={submitGarden}
         />

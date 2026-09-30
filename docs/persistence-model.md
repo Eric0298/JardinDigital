@@ -106,7 +106,10 @@ files as SQLite BLOBs: **no**. Migration v1 contains the Node fields `id`,
 `id/canvas_id/node_id/x/y`, with foreign keys to Canvas and Node plus
 `UNIQUE(canvas_id, node_id)`. Migration v3 adds Edge
 `id/source_node_id/target_node_id`, with both endpoints referencing Node and no
-Canvas or Placement identity.
+Canvas or Placement identity. Migration v4 adds `inbox_items(node_id)` as a
+foreign-key membership relation. It stores no duplicate Node content, status,
+timestamp, position, or metadata; its atomic Capture and Inbox-to-Placement
+commands are detailed in [`capture-inbox.md`](./capture-inbox.md).
 
 ## 7. Resource
 

@@ -57,9 +57,9 @@ No product flow depends on that panel.
 
 ## Persistence and known debt
 
-The schema remains at three migrations and four tables: `nodes`, `canvases`,
-`placements`, and `edges`. No timestamp, setting, last-opened value, viewport,
-or selection is persisted.
+At the end of #13, the schema remained at three migrations and four tables:
+`nodes`, `canvases`, `placements`, and `edges`. No timestamp, setting,
+last-opened value, viewport, or selection was persisted in that block.
 
 Node creation followed by Placement creation remains deliberately
 non-transactional. Canvas loading still resolves one Node per Placement. Those
