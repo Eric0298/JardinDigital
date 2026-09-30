@@ -3,6 +3,7 @@ import type { Canvas, CanvasId } from "../domain/canvas";
 export interface CanvasPersistence {
   save(canvas: Canvas): Promise<void>;
   load(id: CanvasId): Promise<Canvas | null>;
+  list(): Promise<Canvas[]>;
 }
 
 export class CanvasPersistenceError extends Error {

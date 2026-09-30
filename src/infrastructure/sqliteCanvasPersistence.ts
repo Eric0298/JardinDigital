@@ -11,6 +11,20 @@ interface CanvasRow {
   title: unknown;
 }
 
+function rowToCanvas(row: CanvasRow): Canvas {
+  if (typeof row.id !== "string" || typeof row.title !== "string") {
+    throw new InvalidPersistedCanvasError(
+      new Error("Canvas row contains unexpected column types."),
+    );
+  }
+
+  try {
+    return rehydrateCanvas(row.id, row.title);
+  } catch (error) {
+    throw new InvalidPersistedCanvasError(error);
+  }
+}
+
 export function createSqliteCanvasPersistence(): CanvasPersistence {
   return {
     async save(canvas: Canvas) {
@@ -48,17 +62,24 @@ export function createSqliteCanvasPersistence(): CanvasPersistence {
         return null;
       }
 
-      if (typeof row.id !== "string" || typeof row.title !== "string") {
-        throw new InvalidPersistedCanvasError(
-          new Error("Canvas row contains unexpected column types."),
-        );
-      }
+      return rowToCanvas(row);
+    },
+
+    async list() {
+      let rows: CanvasRow[];
 
       try {
-        return rehydrateCanvas(row.id, row.title);
+        const db = await jardindigitalDatabase();
+        rows = await db.select<CanvasRow[]>(
+          `SELECT id, title
+           FROM canvases
+           ORDER BY title COLLATE NOCASE, id`,
+        );
       } catch (error) {
-        throw new InvalidPersistedCanvasError(error);
+        throw new CanvasPersistenceError("Could not list Canvases.", error);
       }
+
+      return rows.map(rowToCanvas);
     },
   };
 }

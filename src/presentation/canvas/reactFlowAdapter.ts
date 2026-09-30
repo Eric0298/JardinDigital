@@ -2,7 +2,8 @@ import type {
   Edge as ReactFlowEdge,
   Node as ReactFlowNode,
 } from "@xyflow/react";
-import type { Edge } from "../../domain/edge";
+import { MarkerType } from "@xyflow/react";
+import type { Edge, EdgeId } from "../../domain/edge";
 import type { Node, NodeId } from "../../domain/node";
 import type { Placement, PlacementId } from "../../domain/placement";
 
@@ -60,6 +61,7 @@ export function toReactFlowNodes(
 export function toReactFlowEdges(
   edges: readonly Edge[],
   placements: readonly Placement[],
+  selectedEdgeId: EdgeId | null = null,
 ): CanvasFlowEdge[] {
   const placementsByNodeId = new Map(
     placements.map((placement) => [placement.nodeId, placement]),
@@ -80,6 +82,8 @@ export function toReactFlowEdges(
         target: targetPlacement.id,
         sourceHandle: "source",
         targetHandle: "target",
+        markerEnd: { type: MarkerType.ArrowClosed },
+        selected: edge.id === selectedEdgeId,
       },
     ];
   });

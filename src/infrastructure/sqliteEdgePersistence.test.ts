@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import { createEdge } from "../domain/edge";
+import { createEdge, type EdgeId } from "../domain/edge";
 import { createNode, type NodeId } from "../domain/node";
 import { createSqliteEdgePersistence } from "./sqliteEdgePersistence";
 
@@ -77,5 +77,18 @@ describe("SQLite Edge persistence", () => {
     await expect(persistence.loadBetweenNodes([])).resolves.toEqual([]);
 
     expect(database.select).not.toHaveBeenCalled();
+  });
+
+  it("deletes an Edge with a parameterized statement", async () => {
+    const persistence = createSqliteEdgePersistence();
+    const edgeId = "b9df42c8-b8c8-4ac6-8ae5-67a6c61ed2b3";
+
+    await persistence.delete(edgeId as EdgeId);
+
+    expect(database.execute).toHaveBeenCalledOnce();
+    expect(database.execute).toHaveBeenCalledWith(
+      "DELETE FROM edges WHERE id = $1",
+      [edgeId],
+    );
   });
 });

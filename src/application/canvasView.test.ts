@@ -26,6 +26,7 @@ describe("loadCanvasView", () => {
       canvasPersistence: {
         save: vi.fn(),
         load: vi.fn(async () => canvas),
+        list: vi.fn(async () => [canvas]),
       },
       nodePersistence: {
         save: vi.fn(),
@@ -39,6 +40,7 @@ describe("loadCanvasView", () => {
       edgePersistence: {
         save: vi.fn(async (_edge: Edge) => undefined),
         loadBetweenNodes: vi.fn(async () => [edge]),
+        delete: vi.fn(),
       },
     } satisfies CanvasViewDependencies;
 

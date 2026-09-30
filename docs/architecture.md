@@ -30,8 +30,10 @@ now have narrow persistence ports and application functions in
 `src/application`;
 their SQLite implementations live in `src/infrastructure` and share one lazy
 database load. `src/presentation/canvas` contains the explicit Domain-to-React
-Flow adapter. `src/App.tsx` remains the temporary UI root and `src/main.tsx` is
-both the frontend entry point and the composition root that injects the
+Flow adapter and Canvas interaction components. `src/presentation/garden`
+contains the product-facing Garden workspace: Garden is the UI name while
+Canvas remains the Domain model. `src/App.tsx` owns startup and top-level
+composition; `src/main.tsx` remains the composition root that injects the
 concrete adapters. The `@` alias is intentionally deferred because there are
 no deep imports to simplify.
 
@@ -73,6 +75,8 @@ The adapter lives in Presentation, outside Domain. It maps each loaded Node and
 Placement to a visual React Flow Node whose identity is the Placement ID and
 whose position is copied from `Placement.position`. It maps each Domain Edge
 by resolving both endpoint Node IDs to the Placements in the active Canvas.
+Directed Domain Edges receive a target arrow in Presentation, and their
+selected state remains ephemeral Presentation state.
 React Flow objects are never persisted directly. At drag end the UI sends the
 visual coordinates through Application, which calls Domain `movePlacement()`
 and persists the resulting Placement. These boundaries keep React Flow
@@ -113,6 +117,9 @@ Canvas slice in
 The current selection and persistent Node-editing interaction is recorded in
 [`canvas-node-editing.md`](./canvas-node-editing.md). Persistent connection
 creation is recorded in [`canvas-edge-connection.md`](./canvas-edge-connection.md).
+The product-facing Garden startup, Canvas listing, workspace shell, and
+connection deletion are recorded in
+[`garden-usable-foundation.md`](./garden-usable-foundation.md).
 
 ## Native boundary
 

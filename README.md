@@ -22,15 +22,16 @@ Implemented:
 
 - framework-independent domain models for Node, Edge, Canvas, Placement, and
   Resource;
-- local SQLite persistence for creating, loading, and editing Nodes while
-  preserving their identity;
+- local SQLite persistence for Nodes, Canvases, Placements, and Edges while
+  preserving their identities;
 - Tauri 2 desktop foundation with React and TypeScript;
-- React Flow adopted as the initial Presentation/UI implementation for the
-  future two-dimensional Canvas.
+- a Garden workspace that opens existing Canvases without technical IDs and
+  supports creating and switching Gardens;
+- a React Flow Canvas for creating, editing, moving, and connecting ideas,
+  including directed connections, connection deletion, and restart recovery.
 
 Planned, but not implemented as product features yet:
 
-- the production Canvas and persistent Placement workflow;
 - Capture and Library experiences;
 - Resource management and Managed/Linked file behavior;
 - backup, import/export, search, and other later capabilities.

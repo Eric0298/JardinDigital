@@ -3,7 +3,7 @@ import {
   InvalidPersistedEdgeError,
   type EdgePersistence,
 } from "../application/edgePersistence";
-import { rehydrateEdge, type Edge } from "../domain/edge";
+import { rehydrateEdge, type Edge, type EdgeId } from "../domain/edge";
 import { jardindigitalDatabase } from "./sqliteDatabase";
 
 interface EdgeRow {
@@ -77,6 +77,15 @@ export function createSqliteEdgePersistence(): EdgePersistence {
       }
 
       return rows.map(rowToEdge);
+    },
+
+    async delete(id: EdgeId) {
+      try {
+        const db = await jardindigitalDatabase();
+        await db.execute("DELETE FROM edges WHERE id = $1", [id]);
+      } catch (error) {
+        throw new EdgePersistenceError("Could not delete Edge.", error);
+      }
     },
   };
 }

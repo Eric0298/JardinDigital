@@ -65,6 +65,8 @@ describe("React Flow Edge adapter", () => {
       target: targetPlacement.id,
       sourceHandle: "source",
       targetHandle: "target",
+      markerEnd: { type: "arrowclosed" },
+      selected: false,
     });
     expect(visualEdge.source).not.toBe(sourceNode.id);
     expect(visualEdge.target).not.toBe(targetNode.id);
@@ -116,5 +118,21 @@ describe("React Flow Edge adapter", () => {
 
     expect(visualEdge.source).toBe(placement.id);
     expect(visualEdge.target).toBe(placement.id);
+  });
+
+  it("marks the selected directed Edge for Presentation", () => {
+    const canvas = createCanvas("Principal");
+    const sourceNode = createNode("Source");
+    const targetNode = createNode("Target");
+    const placements = [
+      createPlacement(canvas.id, sourceNode.id, { x: 0, y: 0 }),
+      createPlacement(canvas.id, targetNode.id, { x: 300, y: 0 }),
+    ];
+    const edge = createEdge(sourceNode.id, targetNode.id);
+
+    const [visualEdge] = toReactFlowEdges([edge], placements, edge.id);
+
+    expect(visualEdge.selected).toBe(true);
+    expect(visualEdge.markerEnd).toEqual({ type: "arrowclosed" });
   });
 });
