@@ -1,5 +1,7 @@
 import type { Canvas, CanvasId } from "../../domain/canvas";
 import type { Node, NodeId } from "../../domain/node";
+import { Icon } from "../shared/Icon";
+import { ActionMenu } from "../shared/ActionMenu";
 
 interface InboxListProps {
   readonly busyNodeId: NodeId | null;
@@ -9,6 +11,8 @@ interface InboxListProps {
   readonly onEdit: (node: Node) => void;
   readonly onGardenChange: (nodeId: NodeId, canvasId: CanvasId) => void;
   readonly onPlace: (node: Node) => void;
+  readonly onRemove: (node: Node) => void;
+  readonly onOpenIdea: (nodeId: NodeId) => void;
 }
 
 function heading(node: Node) {
@@ -28,6 +32,8 @@ export function InboxList({
   onEdit,
   onGardenChange,
   onPlace,
+  onRemove,
+  onOpenIdea,
 }: InboxListProps) {
   return (
     <div className="inbox-list">
@@ -38,25 +44,34 @@ export function InboxList({
         return (
           <article className="inbox-card" key={node.id}>
             <div className="inbox-card__content">
-              <h3>{heading(node) || "Untitled idea"}</h3>
+              <h3>{heading(node) || "Idea sin título"}</h3>
               {node.content.length > 0 ? (
                 <p>{node.content}</p>
               ) : (
-                <p className="inbox-card__empty">No additional content.</p>
+                <p className="inbox-card__empty">Sin contenido adicional.</p>
               )}
             </div>
-            <div className="inbox-card__actions">
+            <div className="inbox-card__actions idea-list-card__footer">
+              <button
+                type="button"
+                className="secondary-button idea-open-button"
+                onClick={() => onOpenIdea(node.id)}
+                disabled={busyNodeId !== null}
+              >
+                <Icon name="open" />Abrir idea
+              </button>
+              <ActionMenu label={`Opciones de la idea ${heading(node) || "sin título"}`}>
               <button
                 type="button"
                 className="secondary-button"
                 onClick={() => onEdit(node)}
                 disabled={busyNodeId !== null}
               >
-                Edit
+                <Icon name="edit" />Editar
               </button>
               {gardens.length > 0 ? (
                 <label className="inbox-garden-selector">
-                  <span>Garden</span>
+                  <span>Añadir a un jardín</span>
                   <select
                     value={selectedGarden}
                     onChange={(event) =>
@@ -72,15 +87,20 @@ export function InboxList({
                   </select>
                 </label>
               ) : (
-                <span className="inbox-no-gardens">No Gardens available</span>
+                <span className="inbox-no-gardens">No hay jardines disponibles</span>
               )}
               <button
                 type="button"
+                className="secondary-button"
                 onClick={() => onPlace(node)}
                 disabled={busyNodeId !== null || gardens.length === 0}
               >
-                {busy ? "Placing..." : "Place in Garden"}
+                <Icon name="plus" />{busy ? "Añadiendo…" : "Añadir al jardín"}
               </button>
+              <button type="button" className="secondary-button" onClick={() => onRemove(node)} disabled={busyNodeId !== null}>
+                <Icon name="unlink" />Quitar de pendientes
+              </button>
+              </ActionMenu>
             </div>
           </article>
         );

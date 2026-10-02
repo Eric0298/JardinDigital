@@ -15,10 +15,13 @@ export interface CanvasView {
 }
 
 export interface CanvasViewDependencies {
-  readonly canvasPersistence: CanvasPersistence;
+  readonly canvasPersistence: Pick<CanvasPersistence, "load" | "save">;
   readonly edgePersistence: EdgePersistence;
-  readonly nodePersistence: NodePersistence;
-  readonly placementPersistence: PlacementPersistence;
+  readonly nodePersistence: Pick<NodePersistence, "loadMany" | "save">;
+  readonly placementPersistence: Pick<
+    PlacementPersistence,
+    "load" | "loadForCanvas" | "save"
+  >;
 }
 
 export async function loadCanvasView(
@@ -33,19 +36,17 @@ export async function loadCanvasView(
 
   const placements =
     await dependencies.placementPersistence.loadForCanvas(canvas.id);
-  const nodes = await Promise.all(
-    placements.map(async (placement) => {
-      const node = await dependencies.nodePersistence.load(placement.nodeId);
-
-      if (node === null) {
-        throw new Error(
-          `Node ${placement.nodeId} referenced by a Placement was not found.`,
-        );
-      }
-
-      return node;
-    }),
+  const loadedNodes = await dependencies.nodePersistence.loadMany(
+    placements.map((placement) => placement.nodeId),
   );
+  const nodesById = new Map(loadedNodes.map((node) => [node.id, node]));
+  const nodes = placements.map((placement) => {
+    const node = nodesById.get(placement.nodeId);
+    if (node === undefined) {
+      throw new Error("A placed idea could not be found.");
+    }
+    return node;
+  });
   const edges = await dependencies.edgePersistence.loadBetweenNodes(
     placements.map((placement) => placement.nodeId),
   );

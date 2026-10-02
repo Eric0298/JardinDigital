@@ -1,3 +1,6 @@
+mod operations;
+mod resource_files;
+
 fn migrations() -> Vec<tauri_plugin_sql::Migration> {
     vec![
         tauri_plugin_sql::Migration {
@@ -81,6 +84,33 @@ fn migrations() -> Vec<tauri_plugin_sql::Migration> {
                   END;",
             kind: tauri_plugin_sql::MigrationKind::Up,
         },
+        tauri_plugin_sql::Migration {
+            version: 5,
+            description: "appearance_settings",
+            sql: "CREATE TABLE appearance_settings (
+                    id INTEGER PRIMARY KEY CHECK (id = 1),
+                    theme TEXT NOT NULL CHECK (theme IN ('system', 'light', 'dark')),
+                    canvas_background TEXT NOT NULL CHECK (canvas_background IN ('plain', 'dots', 'grid'))
+                  );
+                  INSERT INTO appearance_settings (id, theme, canvas_background)
+                  VALUES (1, 'system', 'dots');",
+            kind: tauri_plugin_sql::MigrationKind::Up,
+        },
+        tauri_plugin_sql::Migration {
+            version: 6,
+            description: "linked_resources",
+            sql: "CREATE TABLE resources (
+                    id TEXT PRIMARY KEY NOT NULL,
+                    node_id TEXT NOT NULL REFERENCES nodes(id),
+                    kind TEXT NOT NULL CHECK (kind IN ('document', 'video', 'link')),
+                    title TEXT NOT NULL CHECK (length(trim(title)) > 0),
+                    locator TEXT NOT NULL CHECK (length(trim(locator)) > 0),
+                    location TEXT NOT NULL CHECK (location IN ('local', 'url')),
+                    CHECK (kind != 'link' OR location = 'url')
+                  );
+                  CREATE INDEX resources_node_id ON resources(node_id);",
+            kind: tauri_plugin_sql::MigrationKind::Up,
+        },
     ]
 }
 
@@ -89,11 +119,23 @@ pub fn run() {
     let migrations = migrations();
 
     tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_opener::init())
         .plugin(
             tauri_plugin_sql::Builder::default()
                 .add_migrations("sqlite:jardindigital.db", migrations)
                 .build(),
         )
+        .invoke_handler(tauri::generate_handler![
+            operations::delete_knowledge,
+            operations::delete_garden,
+            operations::create_node_in_garden,
+            operations::export_backup,
+            operations::restore_backup,
+            resource_files::choose_resource_file,
+            resource_files::resource_file_exists,
+            resource_files::open_resource
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
@@ -194,6 +236,69 @@ mod tests {
                 )
                 .await,
                 5,
+            );
+        });
+    }
+
+    #[test]
+    fn migration_v5_adds_one_validated_appearance_row_to_existing_database() {
+        tauri::async_runtime::block_on(async {
+            let mut connection = migrated_database().await;
+            sqlx::raw_sql(migrations()[4].sql)
+                .execute(&mut connection)
+                .await
+                .expect("migration v5 should apply to a v4 database");
+            assert_eq!(
+                count(&mut connection, "SELECT count(*) FROM appearance_settings").await,
+                1
+            );
+            let invalid =
+                sqlx::query("UPDATE appearance_settings SET theme = 'invalid' WHERE id = 1")
+                    .execute(&mut connection)
+                    .await;
+            assert!(invalid.is_err());
+        });
+    }
+
+    #[test]
+    fn migration_v6_adds_linked_metadata_with_node_integrity_and_validated_kind() {
+        tauri::async_runtime::block_on(async {
+            let mut connection = migrated_database().await;
+            sqlx::raw_sql(migrations()[4].sql)
+                .execute(&mut connection)
+                .await
+                .unwrap();
+            sqlx::query("INSERT INTO nodes VALUES ('n1','Existing idea','')")
+                .execute(&mut connection)
+                .await
+                .unwrap();
+            let migration = &migrations()[5];
+            assert_eq!(migration.version, 6);
+            sqlx::raw_sql(migration.sql)
+                .execute(&mut connection)
+                .await
+                .unwrap();
+            assert_eq!(
+                count(&mut connection, "SELECT count(*) FROM nodes").await,
+                1
+            );
+            sqlx::query("INSERT INTO resources VALUES ('r1','n1','document','Doc','C:/missing/doc.pdf','local')").execute(&mut connection).await.unwrap();
+            assert!(sqlx::query("INSERT INTO resources VALUES ('r2','missing','video','Video','C:/missing/video.mp4','local')").execute(&mut connection).await.is_err());
+            assert!(sqlx::query(
+                "INSERT INTO resources VALUES ('r2','n1','other','Doc','C:/doc.pdf','local')"
+            )
+            .execute(&mut connection)
+            .await
+            .is_err());
+            assert!(sqlx::query(
+                "INSERT INTO resources VALUES ('r2','n1','link','Link','C:/doc.pdf','local')"
+            )
+            .execute(&mut connection)
+            .await
+            .is_err());
+            assert_eq!(
+                count(&mut connection, "SELECT count(*) FROM resources").await,
+                1
             );
         });
     }

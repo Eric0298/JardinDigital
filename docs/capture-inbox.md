@@ -1,5 +1,9 @@
 # Capture and Inbox
 
+> Historical Capture/Inbox slice. Personal v1 also supports Remove from Inbox,
+> Search, and permanent knowledge deletion. See
+> [persistence-model.md](./persistence-model.md) for current semantics.
+
 ## Product flow
 
 Capture solves one need: save an idea before deciding where it belongs. It
@@ -12,6 +16,12 @@ Garden editing. The Node ID and Inbox membership remain unchanged. Placing an
 idea creates a `Placement` that references that same Node ID and then removes
 only its Inbox membership. The Node remains stored and becomes visible in the
 chosen Garden.
+
+This Process Inbox action differs from Place from Library. Library placement
+creates or accepts a Placement but deliberately leaves Inbox membership intact
+until the user processes that pending idea through Inbox. The distinction and
+the safe Placement-removal lifecycle are documented in
+[`library-knowledge-lifecycle.md`](./library-knowledge-lifecycle.md).
 
 ## Persistence decision
 
@@ -77,8 +87,8 @@ and reuses the existing Create Garden flow. Capture never creates a Garden.
 ## Scope and maintained debt
 
 This slice adds no router, state library, UI kit, generic transaction layer,
-new npm package, or Rust dependency. ProductShell uses local state for the two
-current surfaces. Resource handling, Library, Create/output, search, tags,
+new npm package, or Rust dependency. ProductShell uses local state for the
+current surfaces. Resource handling, Create/output, search, tags,
 attachments, deletion, returning a Node to Inbox, automatic layout, and mobile
 polish remain outside scope.
 

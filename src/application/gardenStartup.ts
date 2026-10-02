@@ -1,4 +1,4 @@
-import { createCanvas, type Canvas } from "../domain/canvas";
+import { createCanvas, rehydrateCanvas, type Canvas } from "../domain/canvas";
 import type { CanvasPersistence } from "./canvasPersistence";
 
 export interface GardenStartup {
@@ -13,7 +13,7 @@ export async function loadGardenStartup(
 
   return {
     gardens,
-    initialGarden: gardens[0] ?? null,
+    initialGarden: null,
   };
 }
 
@@ -24,4 +24,14 @@ export async function createGarden(
   const garden = createCanvas(title);
   await persistence.save(garden);
   return garden;
+}
+
+export async function renameGarden(
+  persistence: Pick<CanvasPersistence, "save">,
+  garden: Canvas,
+  title: string,
+): Promise<Canvas> {
+  const renamed = rehydrateCanvas(garden.id, title);
+  await persistence.save(renamed);
+  return renamed;
 }

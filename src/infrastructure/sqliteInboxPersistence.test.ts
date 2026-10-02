@@ -85,6 +85,15 @@ describe("SQLite Inbox persistence", () => {
     ).resolves.toBe(false);
   });
 
+  it("removes only Inbox membership with a parameterized statement", async () => {
+    const node = createNode("Captured");
+    await createSqliteInboxPersistence().remove(node.id);
+    expect(database.execute).toHaveBeenCalledWith(
+      "DELETE FROM inbox_items WHERE node_id = $1",
+      [node.id],
+    );
+  });
+
   it("places through one atomic transition statement", async () => {
     const canvas = createCanvas("Main");
     const node = createNode("Captured");

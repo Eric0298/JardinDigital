@@ -1,6 +1,7 @@
 import {
   InvalidPersistedPlacementError,
   PlacementPersistenceError,
+  type PlaceNodePersistenceResult,
   type PlacementPersistence,
 } from "../application/placementPersistence";
 import type { CanvasId } from "../domain/canvas";
@@ -68,6 +69,32 @@ export function createSqlitePlacementPersistence(): PlacementPersistence {
       }
     },
 
+    async place(placement: Placement) {
+      try {
+        const db = await jardindigitalDatabase();
+        const result = await db.execute(
+          `INSERT INTO placements (id, canvas_id, node_id, x, y)
+           VALUES ($1, $2, $3, $4, $5)
+           ON CONFLICT(canvas_id, node_id) DO NOTHING`,
+          [
+            placement.id,
+            placement.canvasId,
+            placement.nodeId,
+            placement.position.x,
+            placement.position.y,
+          ],
+        );
+        return (result.rowsAffected === 0
+          ? "already-placed"
+          : "placed") satisfies PlaceNodePersistenceResult;
+      } catch (error) {
+        throw new PlacementPersistenceError(
+          "Could not place Node in Canvas.",
+          error,
+        );
+      }
+    },
+
     async load(id: PlacementId) {
       let rows: PlacementRow[];
 
@@ -107,6 +134,38 @@ export function createSqlitePlacementPersistence(): PlacementPersistence {
       }
 
       return rows.map(rowToPlacement);
+    },
+
+    async list() {
+      let rows: PlacementRow[];
+
+      try {
+        const db = await jardindigitalDatabase();
+        rows = await db.select<PlacementRow[]>(
+          `SELECT id, canvas_id, node_id, x, y
+           FROM placements
+           ORDER BY canvas_id, node_id, id`,
+        );
+      } catch (error) {
+        throw new PlacementPersistenceError(
+          "Could not list Placements.",
+          error,
+        );
+      }
+
+      return rows.map(rowToPlacement);
+    },
+
+    async delete(id: PlacementId) {
+      try {
+        const db = await jardindigitalDatabase();
+        await db.execute("DELETE FROM placements WHERE id = $1", [id]);
+      } catch (error) {
+        throw new PlacementPersistenceError(
+          "Could not remove Placement from Canvas.",
+          error,
+        );
+      }
     },
   };
 }

@@ -1,4 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useModalFocus } from "../useModalFocus";
+import { Icon } from "../shared/Icon";
 
 interface CreateGardenFormProps {
   readonly canCancel: boolean;
@@ -14,6 +16,7 @@ export function CreateGardenForm({
   const [title, setTitle] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const titleInput = useRef<HTMLInputElement | null>(null);
+  const modalRef = useModalFocus(true);
 
   useEffect(() => {
     titleInput.current?.focus();
@@ -33,29 +36,27 @@ export function CreateGardenForm({
   return (
     <div className="garden-form-backdrop" role="presentation">
       <section
+        ref={modalRef}
+        tabIndex={-1}
         className="garden-form-panel"
         role="dialog"
         aria-modal="true"
         aria-labelledby="garden-form-heading"
       >
-        <p className="eyebrow">New Garden</p>
-        <h2 id="garden-form-heading">Name your Garden</h2>
-        <p>A Garden is a visual space for cultivating related ideas.</p>
-        <form onSubmit={submit}>
-          <label htmlFor="garden-title">Garden name</label>
+        <p className="eyebrow">Nuevo jardín</p>
+        <h2 id="garden-form-heading">Pon nombre a tu jardín</h2>
+        <p>Un jardín es un espacio visual para cultivar ideas relacionadas.</p>
+        <form onSubmit={submit} onKeyDown={(event) => {
+          if (event.key === "Escape" && canCancel && !submitting) { event.preventDefault(); onCancel(); }
+        }}>
+          <label htmlFor="garden-title">Nombre del jardín</label>
           <input
             id="garden-title"
             ref={titleInput}
             value={title}
             onChange={(event) => setTitle(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Escape" && canCancel && !submitting) {
-                event.preventDefault();
-                onCancel();
-              }
-            }}
             disabled={submitting}
-            placeholder="My Garden"
+            placeholder="Mi jardín"
           />
           <div className="form-actions">
             {canCancel ? (
@@ -65,14 +66,15 @@ export function CreateGardenForm({
                 onClick={onCancel}
                 disabled={submitting}
               >
-                Cancel
+                Cancelar
               </button>
             ) : null}
             <button
               type="submit"
+              className="button--grow"
               disabled={submitting || title.trim().length === 0}
             >
-              Create Garden
+              <Icon name="garden" />Crear jardín
             </button>
           </div>
         </form>

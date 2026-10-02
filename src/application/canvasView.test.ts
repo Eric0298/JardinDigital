@@ -26,11 +26,10 @@ describe("loadCanvasView", () => {
       canvasPersistence: {
         save: vi.fn(),
         load: vi.fn(async () => canvas),
-        list: vi.fn(async () => [canvas]),
       },
       nodePersistence: {
         save: vi.fn(),
-        load: vi.fn(async (id: NodeId) => nodes.get(id) ?? null),
+        loadMany: vi.fn(async (ids: readonly NodeId[]) => ids.map((id) => nodes.get(id)).filter((node): node is Node => node !== undefined)),
       },
       placementPersistence: {
         save: vi.fn(),
@@ -45,6 +44,8 @@ describe("loadCanvasView", () => {
     } satisfies CanvasViewDependencies;
 
     const view = await loadCanvasView(dependencies, canvas.id);
+
+    expect(dependencies.nodePersistence.loadMany).toHaveBeenCalledOnce();
 
     expect(dependencies.edgePersistence.loadBetweenNodes).toHaveBeenCalledWith([
       source.id,

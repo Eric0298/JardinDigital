@@ -1,0 +1,32 @@
+/* Material is applied to objects and floating controls, keeping reading areas quiet.
+   The solid surface is the fallback when backdrop-filter is unavailable. */
+.home-garden-card, .knowledge-node, .action-menu__content,
+.garden-toolbar, .garden-form-panel, .confirmation-panel,
+.node-editor, .quick-node-form {
+  border-color: var(--glass-border);
+  background: var(--glass-material);
+  box-shadow: var(--glass-shadow);
+}
+@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+  :root { --glass-material: var(--glass-fill); }
+  .home-garden-card, .knowledge-node, .action-menu__content,
+  .garden-toolbar, .garden-form-panel, .confirmation-panel,
+  .node-editor, .quick-node-form {
+    -webkit-backdrop-filter: blur(10px);
+    backdrop-filter: blur(10px);
+  }
+}
+.home-garden-card:hover { box-shadow: var(--glass-shadow-raised); }
+.action-menu__content { box-shadow: var(--glass-shadow-raised); }
+.garden-form-panel, .confirmation-panel, .node-editor { box-shadow: inset 0 1px 0 var(--glass-highlight), var(--shadow-dialog); }
+.garden-toolbar { box-shadow: inset 0 1px 0 var(--glass-highlight), 0 4px 0 -1px var(--glass-edge), var(--shadow); }
+.knowledge-node { border-bottom-color: var(--glass-edge); }
+.react-flow__node.garden-idea--related .knowledge-node { border-color: var(--accent); background: var(--glass-material); }
+.react-flow__node.garden-idea--hovered .knowledge-node { border-color: var(--accent); background: var(--glass-material); box-shadow: var(--glass-shadow-raised); transform: translateY(-4px) scale(1.008); }
+.react-flow__node .knowledge-node--selected, .react-flow__node.selected .knowledge-node { border-color: var(--primary); background: var(--glass-material); box-shadow: 0 0 0 2px var(--primary-soft), var(--glass-shadow-raised); transform: translateY(-3px); }
+.react-flow__handle::after { box-shadow: 0 1px 3px var(--glass-edge), inset 0 1px 0 var(--glass-highlight); }
+.nav-button--active, .context-chip { box-shadow: inset 0 1px 0 var(--glass-highlight), 0 1px 2px var(--glass-edge); }
+.idea-page { background: var(--background); }
+.idea-resource-icon, .brand-mark { box-shadow: inset 0 1px 0 var(--glass-highlight), 0 2px 0 -1px var(--glass-edge), var(--shadow); }
+.idea-inline-form { border: 1px solid var(--glass-border); background: var(--surface); box-shadow: inset 0 1px 0 var(--glass-highlight); }
+.knowledge-search input { box-shadow: inset 0 2px 4px var(--glass-inset), 0 1px 0 var(--glass-highlight); }

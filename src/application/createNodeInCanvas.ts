@@ -5,12 +5,10 @@ import {
   type Placement,
   type Position,
 } from "../domain/placement";
-import type { NodePersistence } from "./nodePersistence";
-import type { PlacementPersistence } from "./placementPersistence";
+import type { NativeOperations } from "./nativeOperations";
 
 export interface CreateNodeInCanvasDependencies {
-  readonly nodePersistence: Pick<NodePersistence, "save">;
-  readonly placementPersistence: Pick<PlacementPersistence, "save">;
+  readonly nativeOperations: Pick<NativeOperations, "createNodeInGarden">;
 }
 
 export interface CreatedNodeInCanvas {
@@ -25,10 +23,8 @@ export async function createNodeInCanvas(
   position: Position,
 ): Promise<CreatedNodeInCanvas> {
   const node = createNode(title, "");
-  await dependencies.nodePersistence.save(node);
-
   const placement = createPlacement(canvasId, node.id, position);
-  await dependencies.placementPersistence.save(placement);
+  await dependencies.nativeOperations.createNodeInGarden(node, placement);
 
   return { node, placement };
 }

@@ -218,8 +218,9 @@ describe("Edge", () => {
 
 describe("Resource", () => {
   it("normalizes its title and generates distinct identities", () => {
-    const first = createResource("  Referencia  ");
-    const second = createResource("Otra referencia");
+    const node = createNode("Idea");
+    const first = createResource(node.id, "link", "  Referencia  ", "https://example.com", "url");
+    const second = createResource(node.id, "link", "Otra referencia", "https://example.org", "url");
 
     expect(first.title).toBe("Referencia");
     expect(first.id).toMatch(UUID_PATTERN);
@@ -228,11 +229,12 @@ describe("Resource", () => {
   });
 
   it("rejects an empty or whitespace-only title", () => {
-    expect(() => createResource("")).toThrow(
-      "Resource title must not be empty.",
+    const node = createNode("Idea");
+    expect(() => createResource(node.id, "link", "", "https://example.com", "url")).toThrow(
+      "El nombre del recurso no puede estar vacío.",
     );
-    expect(() => createResource("   ")).toThrow(
-      "Resource title must not be empty.",
+    expect(() => createResource(node.id, "link", "   ", "https://example.com", "url")).toThrow(
+      "El nombre del recurso no puede estar vacío.",
     );
   });
 });

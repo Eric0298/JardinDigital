@@ -90,6 +90,15 @@ export function createSqliteInboxPersistence(): InboxPersistence {
       }
     },
 
+    async remove(nodeId: NodeId) {
+      try {
+        const db = await jardindigitalDatabase();
+        await db.execute("DELETE FROM inbox_items WHERE node_id = $1", [nodeId]);
+      } catch (error) {
+        throw new InboxPersistenceError("Could not remove idea from Inbox.", error);
+      }
+    },
+
     async place(placement: Placement) {
       let existingRows: PlacementIdentityRow[];
 

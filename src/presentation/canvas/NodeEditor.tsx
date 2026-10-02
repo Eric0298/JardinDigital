@@ -1,6 +1,7 @@
 import type { FormEvent, RefObject } from "react";
 import type { NodeId } from "../../domain/node";
 import type { PlacementId } from "../../domain/placement";
+import { Icon } from "../shared/Icon";
 
 export interface NodeEditDraft {
   readonly nodeId: NodeId;
@@ -17,6 +18,7 @@ interface NodeEditorProps {
   readonly onCancel: () => void;
   readonly onChange: (draft: NodeEditDraft) => void;
   readonly onSave: () => void;
+  readonly onRemove: () => void;
 }
 
 export function NodeEditor({
@@ -27,6 +29,7 @@ export function NodeEditor({
   onCancel,
   onChange,
   onSave,
+  onRemove,
 }: NodeEditorProps) {
   function submit(event: FormEvent) {
     event.preventDefault();
@@ -39,13 +42,13 @@ export function NodeEditor({
       onSubmit={submit}
       onDoubleClick={(event) => event.stopPropagation()}
       onKeyDown={(event) => {
-        if (event.key === "Escape") {
+        if (event.key === "Escape" && !saving) {
           event.preventDefault();
           onCancel();
           return;
         }
 
-        if (event.key === "Enter" && event.ctrlKey) {
+        if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
           event.preventDefault();
           onSave();
           return;
@@ -58,10 +61,10 @@ export function NodeEditor({
       }}
     >
       <div className="node-editor__heading">
-        <strong>Edit idea</strong>
-        <span>Ctrl+Enter to save · Escape to cancel</span>
+        <strong>Editar idea</strong>
+        <span className="sr-only">Ctrl/Cmd+Intro para guardar · Esc para cancelar</span>
       </div>
-      <label htmlFor="node-edit-title">Title</label>
+      <label htmlFor="node-edit-title">Título</label>
       <input
         id="node-edit-title"
         ref={titleRef}
@@ -69,7 +72,7 @@ export function NodeEditor({
         onChange={(event) => onChange({ ...draft, title: event.target.value })}
         disabled={saving}
       />
-      <label htmlFor="node-edit-content">Content</label>
+      <label htmlFor="node-edit-content">Contenido</label>
       <textarea
         id="node-edit-content"
         ref={contentRef}
@@ -81,16 +84,17 @@ export function NodeEditor({
         rows={8}
       />
       <div className="node-editor__actions">
+        <button type="button" className="secondary-button" onClick={onRemove} disabled={saving}><Icon name="unlink" />Quitar del jardín</button>
         <button
           type="button"
           className="secondary-button"
           onClick={onCancel}
           disabled={saving}
         >
-          Cancel
+          Cancelar
         </button>
-        <button type="submit" disabled={saving}>
-          Save
+        <button type="submit" className="button--primary" disabled={saving}>
+          <Icon name="save" />Guardar
         </button>
       </div>
     </form>

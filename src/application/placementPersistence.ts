@@ -6,10 +6,15 @@ import {
 } from "../domain/placement";
 import type { CanvasId } from "../domain/canvas";
 
+export type PlaceNodePersistenceResult = "placed" | "already-placed";
+
 export interface PlacementPersistence {
   save(placement: Placement): Promise<void>;
+  place(placement: Placement): Promise<PlaceNodePersistenceResult>;
   load(id: PlacementId): Promise<Placement | null>;
   loadForCanvas(canvasId: CanvasId): Promise<Placement[]>;
+  list(): Promise<Placement[]>;
+  delete(id: PlacementId): Promise<void>;
 }
 
 export class PlacementPersistenceError extends Error {
@@ -30,7 +35,7 @@ export class InvalidPersistedPlacementError extends PlacementPersistenceError {
 }
 
 export async function moveNodeInCanvas(
-  persistence: PlacementPersistence,
+  persistence: Pick<PlacementPersistence, "load" | "save">,
   placementId: PlacementId,
   newPosition: Position,
 ): Promise<Placement> {
@@ -43,4 +48,18 @@ export async function moveNodeInCanvas(
   const moved = movePlacement(current, newPosition);
   await persistence.save(moved);
   return moved;
+}
+
+export async function removeNodeFromCanvas(
+  persistence: Pick<PlacementPersistence, "load" | "delete">,
+  placementId: PlacementId,
+): Promise<Placement> {
+  const placement = await persistence.load(placementId);
+
+  if (placement === null) {
+    throw new Error("Placement not found.");
+  }
+
+  await persistence.delete(placement.id);
+  return placement;
 }

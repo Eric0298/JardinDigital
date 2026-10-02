@@ -5,12 +5,14 @@ interface DevDebugPanelProps {
 }
 
 export function DevDebugPanel({ view }: DevDebugPanelProps) {
+  if (!import.meta.env.DEV) return null;
+
   return (
     <details className="technical-details">
-      <summary>Development details</summary>
+      <summary>Detalles de desarrollo</summary>
       <div className="technical-content">
         <p className="technical-canvas-id">
-          Canvas <code>{view.canvas.id}</code>
+          Jardín <code>{view.canvas.id}</code>
         </p>
         <div className="identity-list">
           {view.placements.map((placement) => {
@@ -20,18 +22,18 @@ export function DevDebugPanel({ view }: DevDebugPanelProps) {
 
             return (
               <article key={placement.id} className="identity-card">
-                <strong>{node?.title || "Untitled idea"}</strong>
+                <strong>{node?.title || "Idea sin título"}</strong>
                 <dl>
                   <div>
-                    <dt>Node</dt>
+                    <dt>Idea</dt>
                     <dd>{placement.nodeId}</dd>
                   </div>
                   <div>
-                    <dt>Placement</dt>
+                    <dt>Ubicación</dt>
                     <dd>{placement.id}</dd>
                   </div>
                   <div>
-                    <dt>Position</dt>
+                    <dt>Posición</dt>
                     <dd>
                       x: {placement.position.x}, y: {placement.position.y}
                     </dd>
@@ -45,18 +47,18 @@ export function DevDebugPanel({ view }: DevDebugPanelProps) {
           <div className="edge-identity-list">
             {view.edges.map((edge) => (
               <article key={edge.id} className="identity-card">
-                <strong>Edge</strong>
+                <strong>Conexión</strong>
                 <dl>
                   <div>
-                    <dt>Edge</dt>
+                    <dt>Conexión</dt>
                     <dd>{edge.id}</dd>
                   </div>
                   <div>
-                    <dt>Source Node</dt>
+                    <dt>Idea de origen</dt>
                     <dd>{edge.sourceNodeId}</dd>
                   </div>
                   <div>
-                    <dt>Target Node</dt>
+                    <dt>Idea de destino</dt>
                     <dd>{edge.targetNodeId}</dd>
                   </div>
                 </dl>

@@ -1,0 +1,25 @@
+/* Original flat SVG planes. Decorative scenery never participates in the graph. */
+.garden-scene { display: block; width: 100%; height: 100%; overflow: visible; }
+.garden-scene__horizon { fill: var(--garden-horizon); }
+.garden-scene__soil-side { fill: var(--garden-soil-side); }
+.garden-scene__soil-top { fill: var(--garden-soil-top); }
+.garden-scene__water { fill: var(--garden-water); }
+.garden-scene__trunk { fill: var(--garden-trunk); color: var(--garden-trunk); }
+.garden-scene__foliage-back { fill: var(--garden-foliage-back); }
+.garden-scene__foliage-front, .garden-scene__sprout, .garden-scene__bush { fill: var(--garden-foliage-front); }
+.garden-scene__fauna { fill: none; stroke: var(--garden-fauna); stroke-width: 1.7; stroke-linecap: round; }
+.home-garden-cover { height: 164px; background: transparent; border-bottom: 1px solid var(--glass-edge); }
+.home-garden-cover:hover:not(:disabled) { background: transparent; }
+.home-garden-cover .garden-scene { max-width: 360px; margin-inline: auto; }
+.home-summary-status { width: min(1160px, 100%); margin: 0 auto var(--space-4); display: flex; gap: var(--space-3); align-items: center; color: var(--muted); font-size: 0.82rem; }
+.home-summary-status p { margin: 0; }
+.garden-environment { position: absolute; inset: 0; z-index: 0; overflow: hidden; pointer-events: none; user-select: none; }
+.garden-environment__distant, .garden-environment__near { position: absolute; width: clamp(220px, 29vw, 400px); height: 190px; pointer-events: none; }
+.garden-environment__distant { top: -75px; right: -40px; opacity: 0.16; transform: scale(1.12); }
+.garden-environment__near { left: -65px; bottom: -95px; opacity: 0.22; }
+.canvas-surface .react-flow { position: relative; z-index: 1; }
+.garden-environment .garden-scene__horizon { opacity: 0.5; }
+.garden-environment .garden-scene__soil-side { opacity: 0.3; }
+:root[data-theme="dark"] .garden-environment__distant { opacity: 0.11; }
+:root[data-theme="dark"] .garden-environment__near { opacity: 0.17; }
+@media (max-width: 900px) { .garden-environment__distant, .garden-environment__near { width: 260px; height: 150px; } .garden-environment__near { bottom: -78px; } }

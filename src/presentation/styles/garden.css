@@ -1,0 +1,49 @@
+.garden-page { height: 100%; min-height: 0; position: relative; display: grid; grid-template-rows: auto minmax(0, 1fr); background: var(--garden); }
+.garden-toolbar { position: relative; z-index: 12; min-height: 60px; margin: 12px 16px 8px; padding: 10px 16px; display: flex; align-items: center; justify-content: space-between; gap: var(--space-4); border: 1px solid var(--border); border-radius: var(--radius-large); background: var(--surface-elevated); }
+.garden-identity { display: flex; align-items: center; gap: var(--space-4); min-width: 0; }
+.garden-back { flex: 0 0 auto; border-color: transparent; font-size: 0.8rem; color: var(--muted); }
+.garden-title { margin: 0; font-size: 1rem; font-weight: 650; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.garden-actions { display: flex; align-items: center; gap: var(--space-2); flex: 0 0 auto; }
+.garden-actions > button { font-size: 0.8rem; }
+.garden-selector { display: grid; gap: var(--space-2); color: var(--muted); font-size: 0.76rem; }
+.canvas-surface { position: relative; min-height: 0; background: var(--garden); }
+.canvas-surface .react-flow { --xy-edge-stroke-selected: var(--primary); }
+.garden-loading { display: grid; place-items: center; color: var(--muted); }
+.canvas-empty-hint { position: absolute; z-index: 1; top: 50%; left: 50%; transform: translate(-50%, -50%); width: min(420px, 85%); display: grid; gap: var(--space-2); color: var(--muted); text-align: center; pointer-events: none; }
+.canvas-empty-hint strong { color: var(--text); font-size: 1.05rem; font-weight: 600; }
+.canvas-empty-hint span { font-size: 0.82rem; }
+.react-flow__node-knowledge { width: 226px; }
+.knowledge-node { width: 100%; padding: 16px 17px; border: 1px solid var(--border); border-radius: var(--radius); color: var(--text); background: var(--surface); box-shadow: var(--shadow); transition: box-shadow 140ms, border-color 140ms, transform 140ms, background-color 140ms; }
+.knowledge-node__title { display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; overflow: hidden; overflow-wrap: anywhere; line-height: 1.35; font-size: 0.92rem; font-weight: 650; }
+.knowledge-node__preview { margin: 9px 0 0; display: -webkit-box; overflow: hidden; color: var(--muted); font-size: 0.79rem; font-weight: 400; line-height: 1.55; white-space: pre-line; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
+.knowledge-node__resources { display: flex; align-items: center; gap: var(--space-3); margin-top: var(--space-3); color: var(--muted); font-size: 0.72rem; }
+.knowledge-node__resources span { display: inline-flex; align-items: center; gap: 4px; }
+.knowledge-node__resources .ui-icon { width: 14px; height: 14px; }
+.react-flow__node.garden-idea--related .knowledge-node { border-color: var(--accent); background: var(--surface-elevated); }
+.react-flow__node.garden-idea--hovered .knowledge-node { border-color: var(--accent); background: var(--surface-elevated); box-shadow: var(--shadow-raised); transform: translateY(-2px); }
+.react-flow__node .knowledge-node--selected, .react-flow__node.selected .knowledge-node { border-color: var(--primary); box-shadow: 0 0 0 2px var(--primary-soft), var(--shadow-raised); transform: translateY(-2px); }
+.react-flow__node:focus-visible { outline: none; }
+.react-flow__node:focus-visible .knowledge-node { outline: 2px solid var(--focus); outline-offset: 4px; }
+.react-flow__handle { width: 20px; height: 20px; border: 0; background: transparent; cursor: crosshair; }
+.react-flow__handle::after { content: ""; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 7px; height: 7px; border: 2px solid var(--surface); border-radius: 50%; background: var(--accent); opacity: 0.45; transition: opacity 120ms, width 120ms, height 120ms; }
+.react-flow__node:is(.garden-idea--hovered, .selected, :focus-within) .react-flow__handle::after, .react-flow__handle.connecting::after { opacity: 1; width: 11px; height: 11px; }
+.react-flow__edge-path { stroke: var(--connection); stroke-width: 1.45; transition: stroke 120ms, stroke-width 120ms; }
+.garden-connection--highlighted .react-flow__edge-path { stroke: var(--accent); stroke-width: 2; }
+.garden-connection--hovered .react-flow__edge-path { stroke: var(--accent); stroke-width: 2.5; }
+.react-flow .react-flow__edge.selected .react-flow__edge-path { stroke: var(--primary); stroke-width: 2.7; }
+.react-flow__edge:focus-visible { outline: none; }
+.react-flow .react-flow__edge:focus-visible .react-flow__edge-path { stroke: var(--primary); stroke-width: 2.7; }
+.react-flow__connection-path { stroke: var(--accent); stroke-width: 2; }
+.react-flow__attribution { background: var(--surface); font-size: 9px; }
+.react-flow__attribution a { color: var(--muted); }
+.quick-node-form { position: absolute; z-index: 5; width: 236px; padding: var(--space-3); border: 1px solid var(--accent); border-radius: var(--radius); background: var(--surface-elevated); box-shadow: var(--shadow-raised); transform: translate(8px, -50%); }
+.quick-node-form label { display: block; margin-bottom: var(--space-2); color: var(--muted); font-size: 0.75rem; font-weight: 600; }
+.quick-node-form input { padding: 8px 10px; }
+.quick-node-actions { display: flex; gap: var(--space-2); justify-content: flex-end; margin-top: var(--space-2); }
+.quick-node-actions button { min-height: 34px; padding: 7px 9px; font-size: 0.75rem; }
+.node-editor { position: absolute; z-index: 6; top: 16px; right: 16px; width: min(380px, calc(100% - 32px)); max-height: calc(100% - 32px); overflow: auto; padding: var(--space-5); display: grid; gap: var(--space-2); border: 1px solid var(--border); border-radius: var(--radius); background: var(--surface-elevated); box-shadow: var(--shadow-dialog); }
+.node-editor__heading { display: grid; gap: 3px; margin-bottom: var(--space-2); }
+.node-editor__heading span, .node-editor label { color: var(--muted); font-size: 0.76rem; }
+.node-editor label { margin-top: var(--space-2); font-weight: 600; }
+.node-editor__actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--space-2); margin-top: var(--space-3); }
+@media (max-width: 900px) { .garden-toolbar { padding-inline: var(--space-4); } .garden-identity { gap: var(--space-2); } }

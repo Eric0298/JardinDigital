@@ -7,6 +7,7 @@ export interface InboxPersistence {
   capture(node: Node): Promise<void>;
   list(): Promise<Node[]>;
   contains(nodeId: NodeId): Promise<boolean>;
+  remove(nodeId: NodeId): Promise<void>;
   place(placement: Placement): Promise<PlaceInboxNodePersistenceResult>;
 }
 

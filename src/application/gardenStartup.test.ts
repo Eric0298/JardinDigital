@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { createCanvas, type Canvas } from "../domain/canvas";
-import { createGarden, loadGardenStartup } from "./gardenStartup";
+import { createGarden, loadGardenStartup, renameGarden } from "./gardenStartup";
 
 describe("loadGardenStartup", () => {
   it("returns an empty state when there are no Gardens", async () => {
@@ -12,25 +12,41 @@ describe("loadGardenStartup", () => {
     });
   });
 
-  it("opens the only Garden automatically", async () => {
+  it("keeps Home as the entrypoint with one Garden", async () => {
     const garden = createCanvas("Main garden");
     const list = vi.fn(async () => [garden]);
 
     await expect(loadGardenStartup({ list })).resolves.toEqual({
       gardens: [garden],
-      initialGarden: garden,
+      initialGarden: null,
     });
   });
 
-  it("uses the first Garden from the deterministic persistence order", async () => {
+  it("lists all Gardens without automatically opening one", async () => {
     const first = createCanvas("Alpha");
     const second = createCanvas("Beta");
     const list = vi.fn(async () => [first, second]);
 
     await expect(loadGardenStartup({ list })).resolves.toEqual({
       gardens: [first, second],
-      initialGarden: first,
+      initialGarden: null,
     });
+  });
+});
+
+describe("renameGarden", () => {
+  it("preserves Garden identity and saves its normalized title", async () => {
+    const original = createCanvas("Before");
+    const save = vi.fn(async (_garden: Canvas) => undefined);
+    const renamed = await renameGarden({ save }, original, "  After  ");
+    expect(renamed).toEqual({ id: original.id, title: "After" });
+    expect(save).toHaveBeenCalledWith(renamed);
+  });
+
+  it("does not write an empty title", async () => {
+    const save = vi.fn(async (_garden: Canvas) => undefined);
+    await expect(renameGarden({ save }, createCanvas("Before"), " ")).rejects.toThrow();
+    expect(save).not.toHaveBeenCalled();
   });
 });
 

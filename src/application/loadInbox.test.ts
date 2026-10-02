@@ -27,7 +27,7 @@ describe("loadInbox", () => {
     const save = vi.fn(async () => undefined);
 
     const edited = await persistNodeEdit(
-      { save, load: vi.fn() },
+      { save },
       original,
       "Updated",
       "New content",
